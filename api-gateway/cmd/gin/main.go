@@ -30,7 +30,7 @@ func leakBucket() gin.HandlerFunc {
 func main() {
 	loadEnv()
 
-	limit = ratelimit.New(1)
+	limit = ratelimit.New(10)
 
 	reverseProxy = proxy.CreateReverseProxy().
 		WithServiceResolver(serviceResolver()).
