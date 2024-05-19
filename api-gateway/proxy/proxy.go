@@ -1,0 +1,101 @@
+package proxy
+
+import (
+	"bytes"
+	"fmt"
+	"github.com/google/uuid"
+	"github.com/slink-go/api-gateway/resolver"
+	"github.com/slink-go/logging"
+	"io"
+	"net/http"
+	"net/http/httputil"
+	"net/url"
+)
+
+type ReverseProxy struct {
+	serviceResolver resolver.ServiceResolver
+	pathProcessor   resolver.PathProcessor
+	logger          logging.Logger
+}
+
+func CreateReverseProxy() *ReverseProxy {
+	return &ReverseProxy{
+		logger: logging.GetLogger("reverse-proxy"),
+	}
+}
+func (p *ReverseProxy) WithServiceResolver(serviceResolver resolver.ServiceResolver) *ReverseProxy {
+	p.serviceResolver = serviceResolver
+	return p
+}
+func (p *ReverseProxy) WithPathProcessor(pathProcessor resolver.PathProcessor) *ReverseProxy {
+	p.pathProcessor = pathProcessor
+	return p
+}
+
+func (p *ReverseProxy) ResolveTarget(path string) (*url.URL, error) {
+	if p.pathProcessor == nil {
+		panic("path processor not set")
+	}
+	if p.serviceResolver == nil {
+		panic("service resolver not set")
+	}
+	target, err := p.pathProcessor.UrlResolve(path, p.serviceResolver)
+	if err != nil {
+		return nil, err
+	}
+	resolved, err := url.Parse(target)
+	if err != nil {
+		return nil, err
+	}
+	return resolved, nil
+}
+func (p *ReverseProxy) Proxy(address *url.URL, headers map[string][]string) *httputil.ReverseProxy {
+
+	pr := httputil.NewSingleHostReverseProxy(address)
+
+	pr.Director = func(request *http.Request) {
+		request.Host = address.Host
+		request.URL.Scheme = address.Scheme
+		request.URL.Host = address.Host
+		request.URL.Path = address.Path
+		for header, values := range headers {
+			setHeader(request, header, values)
+		}
+	}
+	pr.ModifyResponse = func(response *http.Response) error {
+		if response.StatusCode == http.StatusInternalServerError {
+			u, s := readBody(response)
+			p.logger.Error("%s ,req %s ,with error %d, body:%s", u.String(), address, response.StatusCode, s)
+			response.Body = io.NopCloser(bytes.NewReader([]byte(fmt.Sprintf("%s", u.String()))))
+		} else if response.StatusCode > 300 {
+			_, s := readBody(response)
+			p.logger.Error("req %s ,with error %d, body:%s", address, response.StatusCode, s)
+			response.Body = io.NopCloser(bytes.NewReader([]byte(s)))
+		}
+		return nil
+	}
+
+	return pr
+}
+
+func readBody(response *http.Response) (uuid.UUID, string) {
+	defer response.Body.Close()
+	all, _ := io.ReadAll(response.Body)
+	u := uuid.New()
+	var s string
+	if len(all) > 0 {
+		s = string(all)
+	}
+	return u, s
+}
+func setHeader(request *http.Request, header string, values []string) {
+	if values == nil || len(values) == 0 {
+		return
+	}
+	request.Header.Set(header, values[0])
+	if len(values) > 1 {
+		for i := 1; i < len(values); i++ {
+			request.Header.Add(header, values[i])
+		}
+	}
+}
