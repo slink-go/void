@@ -5,13 +5,12 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 	p "github.com/gofiber/fiber/v2/middleware/proxy"
-	"github.com/joho/godotenv"
 	"github.com/palantir/stacktrace"
+	"github.com/slink-go/api-gateway/cmd/common"
 	"github.com/slink-go/api-gateway/proxy"
 	"github.com/slink-go/api-gateway/resolver"
 	"github.com/slink-go/logging"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 )
@@ -22,10 +21,10 @@ var logger logging.Logger
 var reverseProxy *proxy.ReverseProxy
 
 func main() {
-	loadEnv()
+	common.LoadEnv()
 
 	reverseProxy = proxy.CreateReverseProxy().
-		WithServiceResolver(serviceResolver()).
+		WithServiceResolver(common.ServiceResolver()).
 		WithPathProcessor(resolver.NewPathProcessor())
 
 	router := fiber.New()
@@ -95,21 +94,4 @@ func queryParams(c *fiber.Ctx) string {
 		result = result + ", "
 	}
 	return strings.TrimSuffix(result, ", ")
-}
-func serviceRegistry() resolver.ServiceRegistry {
-	var registry = make(map[string][]string, 2)
-	registry["service-a"] = []string{"localhost:3101", "localhost:3102", "localhost:3103"}
-	registry["service-b"] = []string{"localhost:3201", "localhost:3202", "localhost:3203"}
-	return resolver.NewStaticServiceRegistry(registry)
-}
-func serviceResolver() resolver.ServiceResolver {
-	return resolver.NewServiceResolver(serviceRegistry())
-}
-func loadEnv() {
-	err := godotenv.Load(".env")
-	if err != nil {
-		os.Setenv("GO_ENV", "dev")
-		logging.GetLogger("main").Warning("could not read config from .env file")
-	}
-	logger = logging.GetLogger("main")
 }

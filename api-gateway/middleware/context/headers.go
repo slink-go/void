@@ -1,4 +1,4 @@
-package headers
+package context
 
 import "strings"
 
@@ -10,13 +10,13 @@ const (
 	CtxLocale    = "Ctx-Locale"
 )
 
-func Get(values []string) string {
+func GetHeader(values []string) string {
 	if values == nil || len(values) == 0 {
 		return ""
 	}
 	return values[0]
 }
-func GetAll(values []string, separator string) string {
+func GetHeaders(values []string, separator string) string {
 	if values == nil || len(values) == 0 {
 		return ""
 	}

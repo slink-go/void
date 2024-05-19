@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/gofiber/fiber/v2"
-	h "github.com/slink-go/api-gateway/context/headers"
+	h "github.com/slink-go/api-gateway/middleware/context"
 	"github.com/slink-go/logging"
 	"strings"
 	"time"
@@ -44,7 +44,7 @@ func (s *Service) testHandler(c *fiber.Ctx) error {
 		fmt.Sprintf(
 			"TEST %s\n%s\n%s\n",
 			s.serviceId,
-			h.Get(c.GetReqHeaders()["Header"]),
+			h.GetHeader(c.GetReqHeaders()["Header"]),
 			c.Query("param"),
 		),
 	)
@@ -56,7 +56,7 @@ func (s *Service) rootHandler(c *fiber.Ctx) error {
 		fmt.Sprintf(
 			"Hello from service %s!\n(%s, %s)\n",
 			s.serviceId,
-			h.Get(c.GetReqHeaders()[h.CtxAuthToken]),
+			h.GetHeader(c.GetReqHeaders()[h.CtxAuthToken]),
 			c.Query("key"),
 		),
 	)

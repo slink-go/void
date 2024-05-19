@@ -49,7 +49,7 @@ func (p *ReverseProxy) ResolveTarget(path string) (*url.URL, error) {
 	}
 	return resolved, nil
 }
-func (p *ReverseProxy) Proxy(address *url.URL, headers map[string][]string) *httputil.ReverseProxy {
+func (p *ReverseProxy) Proxy(address *url.URL) *httputil.ReverseProxy {
 
 	pr := httputil.NewSingleHostReverseProxy(address)
 
@@ -58,11 +58,14 @@ func (p *ReverseProxy) Proxy(address *url.URL, headers map[string][]string) *htt
 		request.URL.Scheme = address.Scheme
 		request.URL.Host = address.Host
 		request.URL.Path = address.Path
-		for header, values := range headers {
-			setHeader(request, header, values)
-		}
 	}
-	pr.ModifyResponse = func(response *http.Response) error {
+	pr.ModifyResponse = p.modifyResponseHandle(address)
+	pr.ErrorHandler = p.errHandle
+
+	return pr
+}
+func (p *ReverseProxy) modifyResponseHandle(address *url.URL) func(response *http.Response) error {
+	return func(response *http.Response) error {
 		if response.StatusCode == http.StatusInternalServerError {
 			u, s := readBody(response)
 			p.logger.Error("%s ,req %s ,with error %d, body:%s", u.String(), address, response.StatusCode, s)
@@ -74,8 +77,9 @@ func (p *ReverseProxy) Proxy(address *url.URL, headers map[string][]string) *htt
 		}
 		return nil
 	}
-
-	return pr
+}
+func (p *ReverseProxy) errHandle(res http.ResponseWriter, req *http.Request, err error) {
+	fmt.Println(err)
 }
 
 func readBody(response *http.Response) (uuid.UUID, string) {
@@ -87,15 +91,4 @@ func readBody(response *http.Response) (uuid.UUID, string) {
 		s = string(all)
 	}
 	return u, s
-}
-func setHeader(request *http.Request, header string, values []string) {
-	if values == nil || len(values) == 0 {
-		return
-	}
-	request.Header.Set(header, values[0])
-	if len(values) > 1 {
-		for i := 1; i < len(values); i++ {
-			request.Header.Add(header, values[i])
-		}
-	}
 }
