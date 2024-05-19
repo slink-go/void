@@ -3,69 +3,74 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/palantir/stacktrace"
+	"github.com/slink-go/api-gateway/gateway"
 	"github.com/slink-go/api-gateway/middleware/context"
+	"github.com/slink-go/api-gateway/middleware/rate"
 	"github.com/slink-go/api-gateway/middleware/security"
 	"github.com/slink-go/api-gateway/proxy"
 	"github.com/slink-go/api-gateway/resolver"
 	"github.com/slink-go/logging"
+	"go.uber.org/ratelimit"
 	"net/http"
 	"strings"
 )
 
-func NewGinBasedGateway() *GinBasedGateway {
+func NewGinBasedGateway() gateway.Gateway {
 	gateway := GinBasedGateway{
 		logger:          logging.GetLogger("gin-gateway"),
 		contextProvider: context.CreateContextProvider(),
 	}
-	gateway.setupRoutes()
-	gateway.setupRateLimiter()
 	return &gateway
 }
 
 type GinBasedGateway struct {
-	//limit           ratelimit.Limiter
-	engine          *gin.Engine
+	logger          logging.Logger
 	contextProvider context.Provider
 	reverseProxy    *proxy.ReverseProxy
-	logger          logging.Logger
+	limiter         ratelimit.Limiter
+	engine          *gin.Engine
 }
 
 func (g *GinBasedGateway) Serve(address string) {
+	g.setupRoutes()
 	g.engine.Run(address)
 }
 
-func (g *GinBasedGateway) WithAuthProvider(ap security.AuthProvider) *GinBasedGateway {
+func (g *GinBasedGateway) WithAuthProvider(ap security.AuthProvider) gateway.Gateway {
 	g.contextProvider.WithAuthProvider(ap)
 	return g
 }
-func (g *GinBasedGateway) WithUserDetailsProvider(udp security.UserDetailsProvider) *GinBasedGateway {
+func (g *GinBasedGateway) WithUserDetailsProvider(udp security.UserDetailsProvider) gateway.Gateway {
 	g.contextProvider.WithUserDetailsProvider(udp)
 	return g
 }
-func (g *GinBasedGateway) WithReverseProxy(reverseProxy *proxy.ReverseProxy) *GinBasedGateway {
+func (g *GinBasedGateway) WithReverseProxy(reverseProxy *proxy.ReverseProxy) gateway.Gateway {
 	g.reverseProxy = reverseProxy
+	return g
+}
+func (g *GinBasedGateway) WithRateLimiter(limiter rate.Limiter) gateway.Gateway {
+	g.limiter = ratelimit.New(limiter.GetLimit())
 	return g
 }
 
 func (g *GinBasedGateway) setupRoutes() {
 	g.engine = gin.New()
+	g.setupRateLimiter()
 	g.engine.GET("*path", g.contextSet, g.proxyHandler)
 	//g.engine.POST("*path", g.contextSetup, g.proxyHandler)
 }
 
 func (g *GinBasedGateway) setupRateLimiter() {
-	//g.engine.Use(leakBucket())
+	if g.limiter != nil {
+		g.engine.Use(g.leakBucket())
+	}
 }
 
-//func leakBucket() gin.HandlerFunc {
-//	//prev := time.Now()
-//	return func(ctx *gin.Context) {
-//		limit.Take()
-//		//now := limit.Take()
-//		//logger.Info("%v", now.Sub(prev))
-//		//prev = now
-//	}
-//}
+func (g *GinBasedGateway) leakBucket() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		g.limiter.Take()
+	}
+}
 
 func (g *GinBasedGateway) contextSet(ctx *gin.Context) {
 	lang := ""

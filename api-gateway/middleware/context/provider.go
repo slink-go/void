@@ -1,7 +1,7 @@
 package context
 
 import (
-	"github.com/slink-go/api-gateway/middleware/limiter"
+	"github.com/slink-go/api-gateway/middleware/rate"
 	"github.com/slink-go/api-gateway/middleware/security"
 	"github.com/slink-go/logging"
 )
@@ -11,7 +11,7 @@ import (
 type basicContextProvider struct {
 	authProvider        security.AuthProvider
 	userDetailsProvider security.UserDetailsProvider
-	rateLimiter         limiter.Limiter
+	rateLimiter         rate.Limiter
 	localeProvider      func(args ...interface{}) string
 	logger              logging.Logger
 }
