@@ -1,5 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="client" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+    <option name="ACTIVE_PROFILES" value="-debug" />
     <module name="client" />
     <option name="SPRING_BOOT_MAIN_CLASS" value="ws.slink.discoveryclient.DiscoveryClientApplication" />
     <method v="2">

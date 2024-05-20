@@ -1,5 +1,9 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="server" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+    <envs>
+      <env name="T_EUREKA_SERVICE_LOGIN" value="login" />
+      <env name="T_EUREKA_SERVICE_PASSWORD" value="password" />
+    </envs>
     <module name="server" />
     <option name="SPRING_BOOT_MAIN_CLASS" value="com.rt.solar.cyberrange.discovery.DiscoveryService" />
     <method v="2">

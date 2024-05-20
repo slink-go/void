@@ -1,7 +1,6 @@
 server:
   port: ${EUREKA_SERVICE_PORT:8761}
 
-
 spring:
   main:
     banner-mode: off
