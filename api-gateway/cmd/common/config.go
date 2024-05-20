@@ -3,19 +3,42 @@ package common
 import (
 	"github.com/joho/godotenv"
 	"github.com/slink-go/api-gateway/cmd/common/env"
-	"github.com/slink-go/api-gateway/resolver"
+	"github.com/slink-go/api-gateway/registry"
 	"github.com/slink-go/logging"
 	"os"
 )
 
-func serviceRegistry() resolver.ServiceRegistry {
-	var registry = make(map[string][]string, 2)
-	registry["service-a"] = []string{"backend:3101", "backend:3102", "backend:3103"}
-	registry["service-b"] = []string{"backend:3201", "backend:3202", "backend:3203"}
-	return resolver.NewStaticServiceRegistry(registry)
-}
-func ServiceResolver() resolver.ServiceResolver {
-	return resolver.NewServiceResolver(serviceRegistry())
+func Services() map[string][]registry.Remote {
+	var services = make(map[string][]registry.Remote, 2)
+	services["service-a"] = []registry.Remote{
+		registry.Remote{
+			Port: 3101,
+			Host: "backend",
+		},
+		registry.Remote{
+			Port: 3102,
+			Host: "backend",
+		},
+		registry.Remote{
+			Port: 3103,
+			Host: "backend",
+		},
+	}
+	services["service-b"] = []registry.Remote{
+		registry.Remote{
+			Port: 3201,
+			Host: "backend",
+		},
+		registry.Remote{
+			Port: 3202,
+			Host: "backend",
+		},
+		registry.Remote{
+			Port: 3203,
+			Host: "backend",
+		},
+	}
+	return services
 }
 func LoadEnv() {
 	err := godotenv.Load(".env")
@@ -24,7 +47,6 @@ func LoadEnv() {
 		logging.GetLogger("main").Warning("could not read config from .env file")
 	}
 }
-
 func GetServicePorts() (base int, add int) {
 	base = int(env.Int64OrDefault(env.ServicePort, 0))
 	if base > 0 {

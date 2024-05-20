@@ -1,4 +1,4 @@
-package resolver
+package registry
 
 import (
 	"container/ring"
@@ -26,7 +26,7 @@ func (b *ringBuffers) New(serviceId string, size int) {
 	b.clientRing[serviceId] = ring.New(size)
 	b.Unlock()
 }
-func (b *ringBuffers) Set(serviceId string, url *string) {
+func (b *ringBuffers) Set(serviceId string, url *Remote) {
 	b.Lock()
 	b.clientRing[serviceId].Value = url
 	b.clientRing[serviceId] = b.clientRing[serviceId].Next()

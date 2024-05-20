@@ -5,6 +5,7 @@ import (
 )
 
 func (bcp *basicContextProvider) processAuthOption(options []Option) (map[string][]string, error) {
+	// TODO: initialize auth context with empty values to prevent passing them from outside
 	if bcp.authProvider == nil {
 		return nil, nil
 	}

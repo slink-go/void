@@ -1,0 +1,84 @@
+@startuml
+
+interface "ServiceRegistry" as R {
+    Get(string) []Remote
+}
+class "StaticRegistry" as SR {
+}
+class "EurekaRegistry" as ER #pink {
+}
+class "DiscoRegistry" as DR #pink{
+}
+class "EurekaClient" as EC #pink{
+}
+class "DiscoClient" as DC #pink{
+}
+interface "ServiceResolver" as RS {
+}
+interface "PathProcessor" as PP {
+}
+class "ReverseProxy" as RP {
+}
+interface "Auth" as A {
+}
+class "NoAuth" as NA {
+}
+class "TokenAuth" as TA {
+}
+class "BasicAuth" as BA {
+}
+interface "AuthProvider" as AP {
+}
+class "HttpHeaderAuthProvider" as HAP {
+}
+class "CookieAuthProvider" as CAP #pink {
+}
+class "UserDetails" as UD {
+}
+interface "UserDetailsProvider" as UDP {
+}
+class "StubUserDetailsProvider" as SUDP {
+}
+class "CRUserDetailsProvider" as CRUDP #pink {
+}
+interface "Limiter" as RL {
+}
+interface "API GATEWAY" as GW #orange  {
+}
+class "FiberGateway" as FGW {
+}
+class "GinGateway" as GGW {
+}
+interface "ContextProvider" as CTX {
+}
+
+SR ..|>R
+ER ..|>R
+DR ..|>R
+EC <-- ER
+DC <-- DR
+R <-- RS
+PP <-- RP
+RS <-- RP
+RP <-- GW
+GW --> AP
+GW -> UDP
+RL <- GW
+AP -> A
+UD <-- UDP
+A <|.. NA
+A <|.. TA
+A <|.. BA
+HAP .|> AP
+AP <|.. CAP
+UDP <|. SUDP
+UDP <|.. CRUDP
+GGW ..|> GW
+FGW ..|> GW
+
+CTX --> AP
+CTX --> UDP
+GGW --> CTX
+FGW --> CTX
+
+@enduml

@@ -10,14 +10,29 @@ import (
 )
 
 type Service struct {
-	logger    logging.Logger
-	serviceId string
+	logger        logging.Logger
+	applicationId string
+	instanceId    string
 }
 
-func Create(serviceId, boundAddress string) *Service {
+func Create(applicationId, instanceId, boundAddress string) *Service {
+
+	//discoveryClient := NewEurekaDiscoveryClient(
+	//	"", applicationId,
+	//)
+
 	service := Service{
-		logger:    logging.GetLogger(fmt.Sprintf("%s-%s", "service", strings.ToLower(serviceId))),
-		serviceId: serviceId,
+		logger: logging.GetLogger(
+			fmt.Sprintf(
+				"%s-%s-%s",
+				"service",
+				strings.ToLower(applicationId),
+				strings.ToLower(instanceId),
+			),
+		),
+		applicationId: applicationId,
+		instanceId:    instanceId,
+		//disco:         discoveryClient,
 	}
 
 	app := fiber.New()
@@ -33,7 +48,7 @@ func (s *Service) slowHandler(c *fiber.Ctx) error {
 	s.logger.Info("[slow] start %s", c.Context().RemoteAddr())
 	time.Sleep(3 * time.Second)
 	err := c.SendString(
-		fmt.Sprintf("SLOW %s\n", s.serviceId),
+		fmt.Sprintf("SLOW %s-%s\n", s.applicationId, s.instanceId),
 	)
 	s.logger.Info("[slow] complete %s", c.Context().RemoteAddr())
 	return err
@@ -42,8 +57,9 @@ func (s *Service) testHandler(c *fiber.Ctx) error {
 	s.logger.Info("%s %v '%v'", c.Context().RemoteAddr(), c.GetReqHeaders(), s.queryParams(c))
 	err := c.SendString(
 		fmt.Sprintf(
-			"TEST %s\nHEADERS: %s\nQUERY PARAMS: %s\n",
-			s.serviceId,
+			"TEST %s-%s\nHEADERS: %s\nQUERY PARAMS: %s\n",
+			s.applicationId,
+			s.instanceId,
 			s.getHeaders(c),
 			s.getQueryParams(c),
 		),
@@ -74,8 +90,9 @@ func (s *Service) rootHandler(c *fiber.Ctx) error {
 	s.logger.Trace("%s %v\n", c.Context().RemoteAddr(), c.GetReqHeaders())
 	err := c.SendString(
 		fmt.Sprintf(
-			"Hello from service %s!\n(%s, %s)\n",
-			s.serviceId,
+			"Hello from service %s-%s!\n(%s, %s)\n",
+			s.applicationId,
+			s.instanceId,
 			h.GetHeader(c.GetReqHeaders()[h.CtxAuthToken]),
 			c.Query("key"),
 		),

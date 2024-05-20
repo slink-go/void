@@ -8,6 +8,7 @@ import (
 	"github.com/slink-go/api-gateway/middleware/rate"
 	"github.com/slink-go/api-gateway/middleware/security"
 	"github.com/slink-go/api-gateway/proxy"
+	"github.com/slink-go/api-gateway/registry"
 	"github.com/slink-go/api-gateway/resolver"
 	"github.com/slink-go/logging"
 	"go.uber.org/ratelimit"
@@ -117,7 +118,7 @@ func (g *GinBasedGateway) proxyHandler(ctx *gin.Context) {
 			ctx.AbortWithStatus(http.StatusBadGateway)
 		case *resolver.ErrInvalidPath:
 			ctx.AbortWithStatus(http.StatusBadRequest)
-		case *resolver.ErrServiceUnavailable:
+		case *registry.ErrServiceUnavailable:
 			ctx.AbortWithStatus(http.StatusServiceUnavailable)
 		}
 		return

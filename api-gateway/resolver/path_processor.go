@@ -2,6 +2,7 @@ package resolver
 
 import (
 	"fmt"
+	"github.com/slink-go/api-gateway/registry"
 	"strings"
 )
 
@@ -75,7 +76,7 @@ func (pp *pathProcessor) UrlResolve(input string, resolver ServiceResolver) (str
 		return "", err
 	}
 	if target == "" {
-		return "", NewErrServiceUnavailable(parts[0])
+		return "", registry.NewErrServiceUnavailable(parts[0])
 	}
 
 	url, err := pp.Join(target, parts)

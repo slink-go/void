@@ -15,6 +15,7 @@ import (
 	"github.com/slink-go/api-gateway/middleware/rate"
 	"github.com/slink-go/api-gateway/middleware/security"
 	"github.com/slink-go/api-gateway/proxy"
+	"github.com/slink-go/api-gateway/registry"
 	"github.com/slink-go/api-gateway/resolver"
 	"github.com/slink-go/logging"
 	"net/http"
@@ -155,7 +156,7 @@ func (g *FiberBasedGateway) proxyTargetResolver(ctx *fiber.Ctx) error {
 			ctx.Status(http.StatusBadGateway)
 		case *resolver.ErrInvalidPath:
 			ctx.Status(http.StatusBadRequest)
-		case *resolver.ErrServiceUnavailable:
+		case *registry.ErrServiceUnavailable:
 			ctx.Status(http.StatusServiceUnavailable)
 		}
 		ctx.WriteString(fmt.Sprintf("%s\n", err.Error()))

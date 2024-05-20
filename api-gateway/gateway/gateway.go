@@ -9,7 +9,7 @@ import (
 type Gateway interface {
 	WithAuthProvider(ap security.AuthProvider) Gateway
 	WithUserDetailsProvider(udp security.UserDetailsProvider) Gateway
-	WithReverseProxy(reverseProxy *proxy.ReverseProxy) Gateway
 	WithRateLimiter(limiter rate.Limiter) Gateway
+	WithReverseProxy(reverseProxy *proxy.ReverseProxy) Gateway
 	Serve(address string)
 }

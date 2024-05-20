@@ -6,6 +6,7 @@ import (
 	"github.com/slink-go/api-gateway/middleware/rate"
 	"github.com/slink-go/api-gateway/middleware/security"
 	"github.com/slink-go/api-gateway/proxy"
+	"github.com/slink-go/api-gateway/registry"
 	"github.com/slink-go/api-gateway/resolver"
 	"github.com/slink-go/logging"
 )
@@ -26,8 +27,9 @@ func main() {
 	udp := security.NewStubUserDetailsProvider()
 	limiter := rate.NewLimiter(10)
 
+	reg := registry.NewStaticRegistry(common.Services())
 	pr := proxy.CreateReverseProxy().
-		WithServiceResolver(common.ServiceResolver()).
+		WithServiceResolver(resolver.NewServiceResolver(reg)).
 		WithPathProcessor(resolver.NewPathProcessor())
 
 	base, add := common.GetServicePorts()
