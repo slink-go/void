@@ -57,7 +57,12 @@ func (g *GinBasedGateway) setupRoutes() {
 	g.engine = gin.New()
 	g.setupRateLimiter()
 	g.engine.GET("*path", g.contextSet, g.proxyHandler)
-	//g.engine.POST("*path", g.contextSetup, g.proxyHandler)
+	g.engine.POST("*path", g.contextSet, g.proxyHandler)
+	g.engine.PUT("*path", g.contextSet, g.proxyHandler)
+	g.engine.DELETE("*path", g.contextSet, g.proxyHandler)
+	g.engine.HEAD("*path", g.contextSet, g.proxyHandler)
+	g.engine.PATCH("*path", g.contextSet, g.proxyHandler)
+	g.engine.OPTIONS("*path", g.contextSet, g.proxyHandler)
 }
 
 func (g *GinBasedGateway) setupRateLimiter() {
@@ -117,7 +122,7 @@ func (g *GinBasedGateway) proxyHandler(ctx *gin.Context) {
 		}
 		return
 	}
-	g.logger.Info("resolved url: %s://%s%s%s -> %s", "http", ctx.Request.Host, ctx.Request.URL.Path, g.queryParams(ctx), target)
+	g.logger.Trace("resolved url: %s://%s%s%s -> %s", "http", ctx.Request.Host, ctx.Request.URL.Path, g.queryParams(ctx), target)
 
 	// TODO: implement it
 	//headers, err := preprocessRequest(ctx)

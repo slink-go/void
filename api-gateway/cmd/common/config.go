@@ -2,6 +2,7 @@ package common
 
 import (
 	"github.com/joho/godotenv"
+	"github.com/slink-go/api-gateway/cmd/common/env"
 	"github.com/slink-go/api-gateway/resolver"
 	"github.com/slink-go/logging"
 	"os"
@@ -19,7 +20,18 @@ func ServiceResolver() resolver.ServiceResolver {
 func LoadEnv() {
 	err := godotenv.Load(".env")
 	if err != nil {
-		os.Setenv("GO_ENV", "dev")
+		os.Setenv(env.GoEnv, "dev")
 		logging.GetLogger("main").Warning("could not read config from .env file")
 	}
+}
+
+func GetServicePorts() (base int, add int) {
+	base = int(env.Int64OrDefault(env.ServicePort, 0))
+	if base > 0 {
+		add = base + 1
+	}
+	if base <= 0 && add <= 0 {
+		panic("service ports not set")
+	}
+	return
 }

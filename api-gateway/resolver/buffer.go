@@ -35,7 +35,9 @@ func (b *ringBuffers) Set(serviceId string, url *string) {
 func (b *ringBuffers) Next(serviceId string) (*ring.Ring, bool) {
 	b.Lock()
 	v, ok := b.clientRing[serviceId]
-	b.clientRing[serviceId] = b.clientRing[serviceId].Next()
+	if ok {
+		b.clientRing[serviceId] = b.clientRing[serviceId].Next() // TODO: это вообще что такое?
+	}
 	b.Unlock()
 	return v, ok
 }

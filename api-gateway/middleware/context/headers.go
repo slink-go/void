@@ -3,11 +3,12 @@ package context
 import "strings"
 
 const (
-	CtxAuthToken = "Ctx-Auth-Token"
-	CtxUserId    = "Ctx-User-Id"
-	CtxUserName  = "Ctx-User-Name"
-	CtxUserRole  = "Ctx-User-Role"
-	CtxLocale    = "Ctx-Locale"
+	CtxAuthToken   = "Ctx-Auth-Token"
+	CtxUserId      = "Ctx-User-Id"
+	CtxUserName    = "Ctx-User-Name"
+	CtxUserRole    = "Ctx-User-Role"
+	CtxLocale      = "Ctx-Locale"
+	CtxProxyTarget = "Ctx-Proxy-Target"
 )
 
 func GetHeader(values []string) string {

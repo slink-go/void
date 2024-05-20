@@ -1,17 +1,19 @@
+# Base
 1. ~~Reverse Proxy~~
 2. ~~Target Resolver~~
-3. Auth Check
-4. ~~Context Setup~~
-5. ~~Rate Limit~~
-6. Log Request
-7. Timeout Support
-8. Bulkhead / Circuit Breaker / etc
-9. Fallback (to default backend service) (?)
-10. Metrics
-11. Profiling
-12. Configuration & feature flags
-13. Eureka Service Resolver (+ Load Balancing)
-14. Cyberrange Auth Provider
-15. ~~Static Resolver: Load Balancing~~
-16. Handle dead peers
-17. 
+3. ~~Context Setup~~
+4. ~~Rate Limit~~
+5. ~~Log Request~~
+6. Fallback (to default backend service) (?)
+7. Profiling
+8. Configuration & feature flags
+9. Eureka Service Resolver (+ Load Balancing)
+10. ~~Static Resolver: Load Balancing~~
+11. Handle dead peers
+
+# Middleware
+1. Auth Check
+2. Cyberrange Auth Provider
+3. Timeout Support
+4. Metrics / Latency Measurement
+5. Bulkhead / Circuit Breaker / etc

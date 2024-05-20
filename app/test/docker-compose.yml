@@ -18,11 +18,11 @@ services:
     image: mvkvl/api-gateway-gin:0.0.1
     container_name: api-gateway-gin
     env_file:
-      - .env
+      - .gw.env
     restart: unless-stopped
     ports:
-      - "3001:3001"
-      - "3011:3011"
+      - "3001:3000"
+      - "3002:3001"
     <<: *basic-log
 
   gateway-fiber:
@@ -33,11 +33,11 @@ services:
     image: mvkvl/api-gateway-fiber:0.0.1
     container_name: api-gateway-fiber
     env_file:
-      - .env
+      - .gw.env
     restart: unless-stopped
     ports:
-      - "3002:3002"
-      - "3012:3012"
+      - "3011:3000"
+      - "3012:3001"
     <<: *basic-log
 
   backend:
