@@ -11,7 +11,6 @@ require (
 replace github.com/slink-go/api-gateway => ./../api-gateway
 
 require (
-	github.com/ArthurHlt/go-eureka-client v1.1.0 // indirect
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
@@ -28,6 +27,5 @@ require (
 	github.com/valyala/fasthttp v1.51.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
 	github.com/xhit/go-str2duration/v2 v2.1.0 // indirect
-	github.com/xuanbo/requests v0.0.2 // indirect
 	golang.org/x/sys v0.20.0 // indirect
 )
