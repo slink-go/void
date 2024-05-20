@@ -7,4 +7,4 @@ if [ -n "$1" ]; then
 fi
 
 cd ${DIR}
-docker build -t "mvkvl/eureka-server" ${TARGET} .
+docker build -t "mvkvl/eureka-client" ${TARGET} .

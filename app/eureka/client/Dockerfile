@@ -2,7 +2,7 @@ ARG MAVEN_VERSION=3.9.5
 ARG JDK_VERSION=17.0.8
 ARG IMAGE_PREFIX=mvkvl
 ARG IMG_SUFFIX
-ARG JAR_FILE="eureka-server-0.0.1.jar"
+ARG JAR_FILE="eureka-client-0.0.1.jar"
 ARG MVNCMD="mvn -B -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --no-transfer-progress --quiet -DskipTests -Dmaven.test.skip -am -T 4"
 
 # -----------------------------------------------------------------------------------------------
