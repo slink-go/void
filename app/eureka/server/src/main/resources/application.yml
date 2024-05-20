@@ -1,0 +1,38 @@
+server:
+  port: ${EUREKA_SERVICE_PORT:8761}
+
+
+spring:
+  main:
+    banner-mode: off
+  application:
+    name: eureka
+  security:
+    user:
+      name: ${EUREKA_SERVICE_LOGIN:x}
+      password: ${EUREKA_SERVICE_PASSWORD:x}
+      roles: SERVICE
+  cloud:
+    config:
+      discovery:
+        enabled: false
+      enabled: false
+
+eureka:
+  client:
+    fetch-remote-regions-registry: false
+    register-with-eureka: false
+    fetch-registry: false
+  instance:
+    hostname: ${EUREKA_SERVICE_HOSTNAME:localhost}
+  server:
+    renewal-percent-threshold: ${EUREKA_RENEWAL_PERCENT_THRESHOLD:0.85}
+    eviction-interval-timer-in-ms: ${EUREKA_EVICTION_INTERVAL_MS:5000}
+
+logging:
+  pattern:
+    console: "${LOG_PATTERN:%d{yyyy-MM-dd HH:mm:ss.SSS} %level %msg%n}"
+  level:
+    com.netflix.eureka.registry.AbstractInstanceRegistry: ERROR
+    com.netflix.eureka: DEBUG
+    com.netflix.discovery: DEBUG

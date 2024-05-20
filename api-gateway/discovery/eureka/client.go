@@ -1,4 +1,12 @@
-package discovery
+package eureka
+
+type EurekaClient struct {
+
+}
+
+type EurekaClient struct {
+
+}
 
 //func NewEurekaDiscoveryClient(url, appId string) DiscoveryClient {
 //	client := eureka.NewClient(&eureka.Config{
