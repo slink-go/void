@@ -1,6 +1,8 @@
 package registry
 
-func NewStaticRegistry(services map[string][]Remote) ServiceRegistry {
+import "github.com/slink-go/api-gateway/discovery"
+
+func NewStaticRegistry(services map[string][]discovery.Remote) ServiceRegistry {
 	directory := createRingBuffers()
 	for k, list := range services {
 		directory.New(k, len(list))
@@ -23,6 +25,6 @@ func (sr *staticRegistry) Get(serviceName string) (string, error) {
 	if !ok {
 		return "", NewErrServiceUnavailable(serviceName)
 	}
-	url := v.Next().Value.(*Remote)
+	url := v.Next().Value.(*discovery.Remote)
 	return (*url).String(), nil
 }

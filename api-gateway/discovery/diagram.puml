@@ -1,0 +1,21 @@
+@startuml
+
+interface "discovery.Client" as DC {
+}
+class "EurekaClient" as EC {
+}
+component "ArthurHlt/go-eureka-client" as LIB {
+    class "eureka.Config" as C {
+    }
+    class "eureka.InstanceInfo" as II {
+    }
+    class "eureka.Client" as eC {
+    }
+}
+
+EC ..|> DC
+EC --> eC
+eC --> C
+eC --> II
+
+@enduml

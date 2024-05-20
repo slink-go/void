@@ -3,37 +3,37 @@ package common
 import (
 	"github.com/joho/godotenv"
 	"github.com/slink-go/api-gateway/cmd/common/env"
-	"github.com/slink-go/api-gateway/registry"
+	"github.com/slink-go/api-gateway/discovery"
 	"github.com/slink-go/logging"
 	"os"
 )
 
-func Services() map[string][]registry.Remote {
-	var services = make(map[string][]registry.Remote, 2)
-	services["service-a"] = []registry.Remote{
-		registry.Remote{
+func Services() map[string][]discovery.Remote {
+	var services = make(map[string][]discovery.Remote, 2)
+	services["service-a"] = []discovery.Remote{
+		discovery.Remote{
 			Port: 3101,
 			Host: "backend",
 		},
-		registry.Remote{
+		discovery.Remote{
 			Port: 3102,
 			Host: "backend",
 		},
-		registry.Remote{
+		discovery.Remote{
 			Port: 3103,
 			Host: "backend",
 		},
 	}
-	services["service-b"] = []registry.Remote{
-		registry.Remote{
+	services["service-b"] = []discovery.Remote{
+		discovery.Remote{
 			Port: 3201,
 			Host: "backend",
 		},
-		registry.Remote{
+		discovery.Remote{
 			Port: 3202,
 			Host: "backend",
 		},
-		registry.Remote{
+		discovery.Remote{
 			Port: 3203,
 			Host: "backend",
 		},

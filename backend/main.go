@@ -1,11 +1,12 @@
 package main
 
 import (
-	"os"
+	"github.com/slink-go/api-gateway/cmd/common"
 )
 
 func main() {
-	os.Setenv("GO_ENV", "dev")
+
+	common.LoadEnv()
 
 	go Create("SERVICE-A", "A1", ":3101")
 	go Create("SERVICE-A", "A2", ":3102")

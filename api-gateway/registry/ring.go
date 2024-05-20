@@ -2,6 +2,7 @@ package registry
 
 import (
 	"container/ring"
+	"github.com/slink-go/api-gateway/discovery"
 	"sync"
 )
 
@@ -26,7 +27,7 @@ func (b *ringBuffers) New(serviceId string, size int) {
 	b.clientRing[serviceId] = ring.New(size)
 	b.Unlock()
 }
-func (b *ringBuffers) Set(serviceId string, url *Remote) {
+func (b *ringBuffers) Set(serviceId string, url *discovery.Remote) {
 	b.Lock()
 	b.clientRing[serviceId].Value = url
 	b.clientRing[serviceId] = b.clientRing[serviceId].Next()
@@ -36,7 +37,7 @@ func (b *ringBuffers) Next(serviceId string) (*ring.Ring, bool) {
 	b.Lock()
 	v, ok := b.clientRing[serviceId]
 	if ok {
-		b.clientRing[serviceId] = b.clientRing[serviceId].Next() // TODO: это вообще что такое?
+		b.clientRing[serviceId] = b.clientRing[serviceId].Next()
 	}
 	b.Unlock()
 	return v, ok

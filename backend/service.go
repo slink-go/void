@@ -3,8 +3,12 @@ package main
 import (
 	"fmt"
 	"github.com/gofiber/fiber/v2"
+	"github.com/slink-go/api-gateway/cmd/common/env"
+	"github.com/slink-go/api-gateway/discovery"
+	"github.com/slink-go/api-gateway/discovery/eureka"
 	h "github.com/slink-go/api-gateway/middleware/context"
 	"github.com/slink-go/logging"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -13,6 +17,7 @@ type Service struct {
 	logger        logging.Logger
 	applicationId string
 	instanceId    string
+	disco         discovery.Client
 }
 
 func Create(applicationId, instanceId, boundAddress string) *Service {
@@ -32,7 +37,13 @@ func Create(applicationId, instanceId, boundAddress string) *Service {
 		),
 		applicationId: applicationId,
 		instanceId:    instanceId,
-		//disco:         discoveryClient,
+		disco:         initEurekaClient(applicationId, instanceId, boundAddress),
+	}
+
+	if service.disco != nil {
+		if err := service.disco.Connect(); err != nil {
+			logging.GetLogger("--").Warning("%s", err)
+		}
 	}
 
 	app := fiber.New()
@@ -109,3 +120,38 @@ func (s *Service) queryParams(c *fiber.Ctx) string {
 	}
 	return strings.TrimSuffix(result, ", ")
 }
+
+func initEurekaClient(applicationId, instanceId, boundAddress string) discovery.Client {
+	url := env.StringOrDefault("EUREKA_URL", "")
+	lg := env.StringOrDefault("EUREKA_LOGIN", "")
+	pw := env.StringOrDefault("EUREKA_PASSWORD", "")
+	if url == "" {
+		return nil
+	}
+	logging.GetLogger("backend").Warning("register on eureka (%s)", url)
+
+	port, err := strconv.Atoi(strings.Split(boundAddress, ":")[1])
+	if err != nil {
+		port = 0
+	}
+
+	return eureka.NewEurekaClient(
+		eureka.NewConfig().
+			WithUrl(url).
+			WithAuth(lg, pw).
+			WithHeartBeat(time.Second * 10).
+			//WithRefresh(time.Second * 30).
+			WithApplication(applicationId).
+			WithInstanceId(fmt.Sprintf("%s-%s", applicationId, instanceId)).
+			WithPort(port),
+	)
+}
+
+// WithUrl(url string)
+// WithAuth(login, password string)
+// WithHeartBeat(interval time.Duration)
+// WithRefresh(interval time.Duration)
+// WithApplication(name string)
+// WithInstanceId(id string)
+// WithPort(port int)
+// WithIp(ip string)

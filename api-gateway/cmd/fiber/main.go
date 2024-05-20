@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/slink-go/api-gateway/cmd/common"
+	"github.com/slink-go/api-gateway/discovery"
 	"github.com/slink-go/api-gateway/middleware/rate"
 	"github.com/slink-go/api-gateway/middleware/security"
 	"github.com/slink-go/api-gateway/proxy"
@@ -27,7 +28,10 @@ func main() {
 	udp := security.NewStubUserDetailsProvider()
 	limiter := rate.NewLimiter(10)
 
-	reg := registry.NewStaticRegistry(common.Services())
+	//reg := registry.NewStaticRegistry(common.Services()) // static registry
+	dc := discovery.NewEurekaClient()        // eureka discovery client
+	reg := registry.NewDiscoveryRegistry(dc) // eureka registry
+
 	pr := proxy.CreateReverseProxy().
 		WithServiceResolver(resolver.NewServiceResolver(reg)).
 		WithPathProcessor(resolver.NewPathProcessor())
