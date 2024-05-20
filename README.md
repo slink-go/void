@@ -13,4 +13,5 @@
 13. Eureka Service Resolver (+ Load Balancing)
 14. Cyberrange Auth Provider
 15. ~~Static Resolver: Load Balancing~~
-16. 
+16. Handle dead peers
+17. 

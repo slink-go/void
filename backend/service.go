@@ -42,14 +42,34 @@ func (s *Service) testHandler(c *fiber.Ctx) error {
 	s.logger.Info("%s %v '%v'", c.Context().RemoteAddr(), c.GetReqHeaders(), s.queryParams(c))
 	err := c.SendString(
 		fmt.Sprintf(
-			"TEST %s\n%s\n%s\n",
+			"TEST %s\nHEADERS: %s\nQUERY PARAMS: %s\n",
 			s.serviceId,
-			h.GetHeader(c.GetReqHeaders()["Header"]),
-			c.Query("param"),
+			s.getHeaders(c),
+			s.getQueryParams(c),
 		),
 	)
 	return err
 }
+
+func (s *Service) getHeaders(c *fiber.Ctx) string {
+	var result []string
+	for k, list := range c.GetReqHeaders() {
+		for _, v := range list {
+			result = append(result, fmt.Sprintf("%s=%s", k, v))
+		}
+	}
+	return strings.Join(result, ", ")
+}
+func (s *Service) getQueryParams(c *fiber.Ctx) string {
+	return strings.Join(
+		strings.Split(
+			string(c.Request().URI().QueryString()),
+			"&",
+		),
+		", ",
+	)
+}
+
 func (s *Service) rootHandler(c *fiber.Ctx) error {
 	s.logger.Trace("%s %v\n", c.Context().RemoteAddr(), c.GetReqHeaders())
 	err := c.SendString(

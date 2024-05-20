@@ -9,8 +9,8 @@ import (
 
 func serviceRegistry() resolver.ServiceRegistry {
 	var registry = make(map[string][]string, 2)
-	registry["service-a"] = []string{"localhost:3101", "localhost:3102", "localhost:3103"}
-	registry["service-b"] = []string{"localhost:3201", "localhost:3202", "localhost:3203"}
+	registry["service-a"] = []string{"backend:3101", "backend:3102", "backend:3103"}
+	registry["service-b"] = []string{"backend:3201", "backend:3202", "backend:3203"}
 	return resolver.NewStaticServiceRegistry(registry)
 }
 func ServiceResolver() resolver.ServiceResolver {

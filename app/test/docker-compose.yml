@@ -1,0 +1,60 @@
+version: "3.7"
+
+x-log-basic: &basic-log
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "1m"
+      max-file: "3"
+      labels: "system"
+
+services:
+
+  gateway-gin:
+    deploy:
+      resources:
+        limits:
+          memory: "50M"
+    image: mvkvl/api-gateway-gin:0.0.1
+    container_name: api-gateway-gin
+    env_file:
+      - .env
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+      - "3011:3011"
+    <<: *basic-log
+
+  gateway-fiber:
+    deploy:
+      resources:
+        limits:
+          memory: "50M"
+    image: mvkvl/api-gateway-fiber:0.0.1
+    container_name: api-gateway-fiber
+    env_file:
+      - .env
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+      - "3012:3012"
+    <<: *basic-log
+
+  backend:
+    deploy:
+      resources:
+        limits:
+          memory: "50M"
+    image: mvkvl/api-backend:0.0.1
+    container_name: api-backend
+    env_file:
+      - .env
+    restart: unless-stopped
+    ports:
+      - "3101:3101"
+      - "3102:3102"
+      - "3103:3103"
+      - "3201:3201"
+      - "3202:3202"
+      - "3203:3203"
+    <<: *basic-log
