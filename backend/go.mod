@@ -23,6 +23,7 @@ require (
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/rs/zerolog v1.32.0 // indirect
 	github.com/sirupsen/logrus v1.4.2 // indirect
+	github.com/slink-go/go-eureka-client v0.0.0-20240520164500-fd6546467a52 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.51.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect

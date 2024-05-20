@@ -42,6 +42,7 @@ require (
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/rs/zerolog v1.32.0 // indirect
 	github.com/sirupsen/logrus v1.4.2 // indirect
+	github.com/slink-go/go-eureka-client v0.0.0-20240520164500-fd6546467a52 // indirect
 	github.com/tinylib/msgp v1.1.8 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.12 // indirect

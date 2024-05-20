@@ -3,8 +3,8 @@ package eureka
 import (
 	"errors"
 	"fmt"
-	e "github.com/ArthurHlt/go-eureka-client/eureka"
 	"github.com/slink-go/api-gateway/discovery"
+	e "github.com/slink-go/go-eureka-client/eureka"
 	"github.com/slink-go/logging"
 	"os"
 	"os/signal"
@@ -46,6 +46,10 @@ func (c *EurekaClient) Connect() error {
 		return fmt.Errorf("eureka url is empty")
 	}
 	c.client = e.NewClient([]string{c.config.url})
+
+	if c.config.login != "" && c.config.password != "" {
+		c.client.WithBasicAuth(c.config.login, c.config.password)
+	}
 
 	if c.config.fetch {
 		go c.refresh()
@@ -153,6 +157,14 @@ func (c *EurekaClient) createInstance() *e.InstanceInfo {
 		//LeaseInfo: &e.LeaseInfo{RenewalIntervalInSecs: c.config.leaseRenewalInterval, DurationInSecs: c.config.leaseDurationInSecs},
 		//Metadata:                      nil, // c.config.metadata
 	}
+	//return e.NewInstanceInfo(
+	//	c.config.hostname,
+	//	c.config.application,
+	//	c.config.getIP(),
+	//	c.config.port,
+	//	30,
+	//	false,
+	//)
 }
 func (c *EurekaClient) repeat(interval time.Duration, action func(), stopChn <-chan struct{}) {
 }

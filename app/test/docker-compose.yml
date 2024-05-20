@@ -64,9 +64,9 @@ services:
     container_name: eureka-server
     restart: unless-stopped
     stop_grace_period: "2s"
-#    environment:
-#      - "EUREKA_SERVICE_LOGIN=eureka"
-#      - "EUREKA_SERVICE_PASSWORD=eureka"
+    environment:
+      - "EUREKA_SERVICE_LOGIN=eureka"
+      - "EUREKA_SERVICE_PASSWORD=eureka"
 #      - "EUREKA_SERVICE_PORT=8761"
 #      - "EUREKA_SERVICE_HOSTNAME=localhost"
     ports:
@@ -80,8 +80,8 @@ services:
     environment:
       - "CLIENT_SERVER_PORT=8080"
       - "CLIENT_SERVICE_NAME=eureka-client"
-      - "EUREKA_DEFAULT_ZONE=http://eureka-server:8761/eureka"
-#      - "EUREKA_DEFAULT_ZONE=http://eureka:eureka@eureka-server:8761/eureka"
+#      - "EUREKA_DEFAULT_ZONE=http://eureka-server:8761/eureka"
+      - "EUREKA_DEFAULT_ZONE=http://eureka:eureka@eureka-server:8761/eureka"
     ports:
       - "9990:8080"
     <<: *basic-log
