@@ -30,3 +30,4 @@
 3. Timeout support
 4. Metrics / latency measurement
 5. Bulkhead / circuit breaker / etc
+6. LIMITER CONFIG

@@ -10,6 +10,9 @@ RUN upx --best -o /fiber-proxy-packed  /fiber-proxy
 
 FROM scratch
 
+#FROM debian:10-slim
+#RUN apt update && apt install iputils-ping -y
+
 COPY --from=build   /fiber-proxy-packed   /fiber-proxy
 
 CMD ["/fiber-proxy"]
