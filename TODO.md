@@ -20,6 +20,7 @@
 17. Remote peers filter (?) (by meta, by status, ...)
 18. Static resolver config from file
 19. GinBasedProxy (handle internal routes) (?)
+20. Client: advertise custom address / port (for specific deployment cases)
 
 
 
