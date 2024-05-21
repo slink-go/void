@@ -4,12 +4,15 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/slink-go/api-gateway/cmd/common"
+	"github.com/slink-go/api-gateway/cmd/common/env"
+	"github.com/slink-go/api-gateway/discovery/eureka"
 	"github.com/slink-go/api-gateway/middleware/rate"
 	"github.com/slink-go/api-gateway/middleware/security"
 	"github.com/slink-go/api-gateway/proxy"
 	"github.com/slink-go/api-gateway/registry"
 	"github.com/slink-go/api-gateway/resolver"
 	"github.com/slink-go/logging"
+	"time"
 )
 
 func main() {
@@ -28,7 +31,9 @@ func main() {
 	udp := security.NewStubUserDetailsProvider()
 	limiter := rate.NewLimiter(1)
 
-	reg := registry.NewStaticRegistry(common.Services())
+	//reg := createStaticRegistry()
+	reg := createEurekaRegistry()
+
 	pr := proxy.CreateReverseProxy().
 		WithServiceResolver(resolver.NewServiceResolver(reg)).
 		WithPathProcessor(resolver.NewPathProcessor())
@@ -55,4 +60,25 @@ func main() {
 	}
 
 	<-make(chan struct{})
+}
+
+func createStaticRegistry() registry.ServiceRegistry {
+	return registry.NewStaticRegistry(common.Services())
+}
+func createEurekaRegistry() registry.ServiceRegistry {
+	eurekaClientConfig := eureka.Config{}
+	eurekaClientConfig.
+		WithUrl(env.StringOrDefault(env.EurekaUrl, "")).
+		WithAuth(
+			env.StringOrDefault(env.EurekaLogin, ""),
+			env.StringOrDefault(env.EurekaPassword, ""),
+		).
+		WithRefresh(env.DurationOrDefault(env.EurekaRefreshInterval, time.Second*30)).
+		WithApplication("fiber-gateway")
+	dc := eureka.NewEurekaClient(&eurekaClientConfig) // eureka discovery client
+	dc.Connect()
+	return registry.NewDiscoveryRegistry(dc)
+}
+func createDiscoRegistry() registry.ServiceRegistry {
+	panic("implement me")
 }

@@ -28,3 +28,10 @@ func (sr *staticRegistry) Get(serviceName string) (string, error) {
 	url := v.Next().Value.(*discovery.Remote)
 	return (*url).String(), nil
 }
+func (sr *staticRegistry) List() []discovery.Remote {
+	result := make([]discovery.Remote, 0)
+	for _, v := range sr.serviceDirectory.List() {
+		result = append(result, *v.(*discovery.Remote))
+	}
+	return result
+}

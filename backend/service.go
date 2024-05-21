@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/slink-go/api-gateway/cmd/common/env"
@@ -21,10 +22,6 @@ type Service struct {
 }
 
 func Create(applicationId, instanceId, boundAddress string) *Service {
-
-	//discoveryClient := NewEurekaDiscoveryClient(
-	//	"", applicationId,
-	//)
 
 	service := Service{
 		logger: logging.GetLogger(
@@ -50,11 +47,21 @@ func Create(applicationId, instanceId, boundAddress string) *Service {
 	app.Get("/", service.rootHandler)
 	app.Get("/api/test", service.testHandler)
 	app.Get("/api/slow", service.slowHandler)
+	app.Get("/api/apps", service.appsListHandler)
 	app.Listen(boundAddress)
 
 	return &service
 }
 
+func (s *Service) appsListHandler(c *fiber.Ctx) error {
+	svcs := s.disco.Services()
+	buff, err := json.Marshal(svcs.List())
+	if err != nil {
+		return err
+	}
+	_, err = c.Write(buff)
+	return err
+}
 func (s *Service) slowHandler(c *fiber.Ctx) error {
 	s.logger.Info("[slow] start %s", c.Context().RemoteAddr())
 	time.Sleep(3 * time.Second)
@@ -139,8 +146,8 @@ func initEurekaClient(applicationId, instanceId, boundAddress string) discovery.
 		eureka.NewConfig().
 			WithUrl(url).
 			WithAuth(lg, pw).
-			WithHeartBeat(time.Second * 10).
-			//WithRefresh(time.Second * 30).
+			WithHeartBeat(env.DurationOrDefault(env.EurekaHeartbeatInterval, time.Second*10)).
+			WithRefresh(env.DurationOrDefault(env.EurekaRefreshInterval, time.Second*30)).
 			WithApplication(applicationId).
 			WithInstanceId(fmt.Sprintf("%s-%s", applicationId, instanceId)).
 			WithPort(port),

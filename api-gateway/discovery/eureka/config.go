@@ -8,8 +8,8 @@ import (
 
 func NewConfig() *Config {
 	return &Config{
-		fetch:       false,
-		register:    false,
+		fetch:       false, // disable registry fetching by default
+		register:    false, // disable registration on eureka by default
 		application: "UNKNOWN",
 		hostname:    "localhost",
 		port:        int(env.Int64OrDefault(env.ServicePort, 0)),

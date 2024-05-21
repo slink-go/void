@@ -9,6 +9,7 @@ const (
 	CtxUserRole    = "Ctx-User-Role"
 	CtxLocale      = "Ctx-Locale"
 	CtxProxyTarget = "Ctx-Proxy-Target"
+	CtxError       = "Ctx-Error"
 )
 
 func GetHeader(values []string) string {

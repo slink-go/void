@@ -4,6 +4,7 @@ import (
 	"github.com/slink-go/api-gateway/middleware/rate"
 	"github.com/slink-go/api-gateway/middleware/security"
 	"github.com/slink-go/api-gateway/proxy"
+	"github.com/slink-go/api-gateway/registry"
 )
 
 type Gateway interface {
@@ -11,5 +12,6 @@ type Gateway interface {
 	WithUserDetailsProvider(udp security.UserDetailsProvider) Gateway
 	WithRateLimiter(limiter rate.Limiter) Gateway
 	WithReverseProxy(reverseProxy *proxy.ReverseProxy) Gateway
+	WithRegistry(registry registry.ServiceRegistry) Gateway
 	Serve(address string)
 }

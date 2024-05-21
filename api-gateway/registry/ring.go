@@ -34,6 +34,9 @@ func (b *ringBuffers) Set(serviceId string, url *discovery.Remote) {
 	b.Unlock()
 }
 func (b *ringBuffers) Next(serviceId string) (*ring.Ring, bool) {
+	if b == nil || b.clientRing == nil {
+		return nil, false
+	}
 	b.Lock()
 	v, ok := b.clientRing[serviceId]
 	if ok {
@@ -41,4 +44,20 @@ func (b *ringBuffers) Next(serviceId string) (*ring.Ring, bool) {
 	}
 	b.Unlock()
 	return v, ok
+}
+func (b *ringBuffers) List() []any {
+	if b == nil || b.clientRing == nil {
+		return []any{}
+	}
+	b.RLock()
+	defer b.RUnlock()
+	result := make([]any, 0)
+	for _, ring := range b.clientRing {
+		for i := 0; i < ring.Len(); i++ {
+			result = append(result, ring.Value)
+			ring = ring.Move(1)
+		}
+	}
+
+	return result
 }

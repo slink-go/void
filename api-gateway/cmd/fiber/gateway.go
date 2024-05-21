@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/csrf"
@@ -37,6 +38,7 @@ type FiberBasedGateway struct {
 	reverseProxy    *proxy.ReverseProxy
 	limiter         fiber.Handler
 	engine          *fiber.App
+	registry        registry.ServiceRegistry
 }
 
 func (g *FiberBasedGateway) Serve(address string) {
@@ -80,6 +82,10 @@ func (g *FiberBasedGateway) WithRateLimiter(limit rate.Limiter) gateway.Gateway 
 	g.limiter = limiter.New(limiterConfig)
 	return g
 }
+func (g *FiberBasedGateway) WithRegistry(registry registry.ServiceRegistry) gateway.Gateway {
+	g.registry = registry
+	return g
+}
 
 func (g *FiberBasedGateway) setupMiddleware() {
 
@@ -113,6 +119,7 @@ func (g *FiberBasedGateway) setupMiddleware() {
 
 }
 func (g *FiberBasedGateway) setupRouteHandlers() {
+	g.engine.Get("/list", g.listRemotes)
 	g.engine.Get("*", g.proxyHandler)
 	g.engine.Post("*", g.proxyHandler)
 	g.engine.Put("*", g.proxyHandler)
@@ -121,10 +128,33 @@ func (g *FiberBasedGateway) setupRouteHandlers() {
 	g.engine.Options("*", g.proxyHandler)
 }
 
+func (g *FiberBasedGateway) listRemotes(c *fiber.Ctx) error {
+	if g.registry != nil {
+		data := g.registry.List()
+		if data == nil || len(data) == 0 {
+			c.Status(fiber.StatusNoContent)
+		} else {
+			buff, err := json.Marshal(data)
+			if err != nil {
+				c.Status(fiber.StatusInternalServerError).Write([]byte(err.Error()))
+			} else {
+				c.Write(buff)
+			}
+		}
+	} else {
+		c.Status(fiber.StatusNoContent)
+	}
+	return nil
+}
 func (g *FiberBasedGateway) customLoggingMiddleware(ctx *fiber.Ctx) error {
 	return ctx.Next()
 }
 func (g *FiberBasedGateway) contextMiddleware(ctx *fiber.Ctx) error {
+	if getHeader(ctx, context.CtxError) != "" {
+		// нет смысла пытаться установить контекст, если не
+		// удалось зарезолвить сервис из реестра
+		return ctx.Next()
+	}
 	lang := ctx.Query("lang", "")
 	cc := g.contextProvider.GetContext(
 		context.NewAuthContextOption(getHeader(ctx, "Authorization")),
@@ -151,19 +181,22 @@ func (g *FiberBasedGateway) proxyTargetResolver(ctx *fiber.Ctx) error {
 	target, err := g.reverseProxy.ResolveTarget(ctx.Path())
 	if err != nil {
 		g.logger.Trace("%s", stacktrace.RootCause(err))
+		// - если смогли нужный найти сервис в реестре, устанавливаем соответствующий
+		// заголовок; иначе просто продолжаем выполнение (пробуем локальный обработчик
+		// вместо прокси)
+		// - для полноты картины выставляем ошибку в контексте
 		switch err.(type) {
 		case *resolver.ErrEmptyBaseUrl:
-			ctx.Status(http.StatusBadGateway)
+			ctx.Request().Header.Set(context.CtxError, err.Error())
 		case *resolver.ErrInvalidPath:
-			ctx.Status(http.StatusBadRequest)
+			ctx.Request().Header.Set(context.CtxError, err.Error())
 		case *registry.ErrServiceUnavailable:
-			ctx.Status(http.StatusServiceUnavailable)
+			ctx.Request().Header.Set(context.CtxError, err.Error())
 		}
-		ctx.WriteString(fmt.Sprintf("%s\n", err.Error()))
-		return nil
+	} else {
+		g.logger.Trace("resolved url: %s%s -> %s", ctx.BaseURL(), ctx.OriginalURL(), target)
+		ctx.Request().Header.Set(context.CtxProxyTarget, target.String())
 	}
-	g.logger.Trace("resolved url: %s%s -> %s", ctx.BaseURL(), ctx.OriginalURL(), target)
-	ctx.Request().Header.Set(context.CtxProxyTarget, target.String())
 	return ctx.Next()
 }
 
@@ -178,8 +211,8 @@ func (g *FiberBasedGateway) proxyHandler(ctx *fiber.Ctx) error {
 
 	target := getHeader(ctx, context.CtxProxyTarget)
 	if target == "" {
-		ctx.Status(http.StatusBadGateway)
-		return fmt.Errorf("proxy target not set")
+		ctx.Status(http.StatusBadGateway).Write([]byte("proxy target not set\n"))
+		return nil
 	}
 
 	proxyTarget := fmt.Sprintf("%s%s", target, g.getQueryParams(ctx))

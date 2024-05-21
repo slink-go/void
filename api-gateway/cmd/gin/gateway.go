@@ -30,6 +30,7 @@ type GinBasedGateway struct {
 	reverseProxy    *proxy.ReverseProxy
 	limiter         ratelimit.Limiter
 	engine          *gin.Engine
+	registry        registry.ServiceRegistry
 }
 
 func (g *GinBasedGateway) Serve(address string) {
@@ -51,6 +52,10 @@ func (g *GinBasedGateway) WithReverseProxy(reverseProxy *proxy.ReverseProxy) gat
 }
 func (g *GinBasedGateway) WithRateLimiter(limiter rate.Limiter) gateway.Gateway {
 	g.limiter = ratelimit.New(limiter.GetLimit())
+	return g
+}
+func (g *GinBasedGateway) WithRegistry(registry registry.ServiceRegistry) gateway.Gateway {
+	g.registry = registry
 	return g
 }
 
@@ -103,6 +108,7 @@ func (g *GinBasedGateway) contextSet(ctx *gin.Context) {
 	}
 
 }
+
 func (g *GinBasedGateway) proxyHandler(ctx *gin.Context) {
 	defer func() {
 		if err := recover(); err != nil {

@@ -1,6 +1,9 @@
 package resolver
 
-import "github.com/slink-go/api-gateway/registry"
+import (
+	"github.com/slink-go/api-gateway/registry"
+	"strings"
+)
 
 type ServiceResolver interface {
 	Resolve(serviceName string) (string, error)
@@ -11,7 +14,7 @@ type serviceResolverImpl struct {
 }
 
 func (sr *serviceResolverImpl) Resolve(serviceName string) (string, error) {
-	return sr.serviceRegistry.Get(serviceName)
+	return sr.serviceRegistry.Get(strings.ToUpper(serviceName))
 }
 
 func NewServiceResolver(serviceRegistry registry.ServiceRegistry) ServiceResolver {

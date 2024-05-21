@@ -28,7 +28,7 @@ func NewEurekaClient(config *Config) discovery.Client {
 
 type EurekaClient struct {
 	config       Config
-	mutex        sync.Mutex
+	mutex        sync.RWMutex
 	client       *e.Client
 	logger       logging.Logger
 	running      bool
@@ -62,8 +62,32 @@ func (c *EurekaClient) Connect() error {
 
 	return nil
 }
-func (c *EurekaClient) Services() discovery.Remotes {
-	panic("implement me")
+func (c *EurekaClient) Services() *discovery.Remotes {
+
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+
+	if c.applications == nil {
+		return nil
+	}
+
+	result := discovery.Remotes{}
+	for _, app := range c.applications.Applications {
+		for _, instance := range app.Instances {
+			r := discovery.Remote{
+				App:  app.Name,
+				Host: instance.IpAddr,
+			}
+			if instance.Port != nil {
+				r.Port = instance.Port.Port
+			}
+			r.Status = instance.Status
+			result.Add(app.Name, r)
+		}
+	}
+
+	return &result
+
 }
 
 func (c *EurekaClient) create() {
@@ -86,7 +110,7 @@ func (c *EurekaClient) refresh() {
 				c.mutex.Lock()
 				c.applications = apps
 				c.mutex.Unlock()
-				c.logger.Warning("refresh complete")
+				c.logger.Trace("[%s] refresh complete", c.config.getInstanceId())
 			}
 		}
 		timer.Reset(c.config.refreshInterval)
