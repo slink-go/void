@@ -45,7 +45,7 @@ type FiberBasedGateway struct {
 
 func (g *FiberBasedGateway) Serve(address string) {
 	g.engine = fiber.New()
-	g.setupMiddleware()
+	g.setupMiddleware(address)
 	g.setupRouteHandlers()
 	g.engine.Listen(address)
 }
@@ -89,20 +89,15 @@ func (g *FiberBasedGateway) WithRegistry(registry registry.ServiceRegistry) gate
 	return g
 }
 
-func (g *FiberBasedGateway) setupMiddleware() {
+func (g *FiberBasedGateway) setupMiddleware(address string) {
 
-	defer func() {
-		if err := recover(); err != nil {
-			g.logger.Warning("middleware config error: %s", err)
-		}
-	}()
-
-	prometheus := fiberprometheus.New("fiber-api-gateway")
-	prometheus.RegisterAt(g.engine, "/prometheus")
+	p := fiberprometheus.New(fmt.Sprintf("fiber-api-gateway:%s", address))
+	p.RegisterAt(g.engine, "/prometheus")
 	//prometheus.SetSkipPaths([]string{"/ping"})
-	g.engine.Use(prometheus.Middleware)
+	g.engine.Use(p.Middleware)
 
 	// logger | должен быть первым, чтобы фиксировать отлупы от другого middleware и latency запросов
+	// кстати о latency - нужна metricMiddleware
 	g.engine.Use(logger.New())
 	//g.engine.Use(g.customLoggingMiddleware)
 
@@ -225,7 +220,9 @@ func (g *FiberBasedGateway) proxyHandler(ctx *fiber.Ctx) error {
 
 	target := getHeader(ctx, context.CtxProxyTarget)
 	if target == "" {
-		ctx.Status(http.StatusBadGateway).Write([]byte("proxy target not set\n"))
+		ctx.Status(http.StatusBadGateway).Write([]byte(
+			fmt.Sprintf("proxy target not set: %s\n", ctx.Get(context.CtxError))),
+		)
 		return nil
 	}
 

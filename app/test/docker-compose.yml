@@ -1,4 +1,4 @@
-version: "3.7"
+#version: "3.7"
 
 x-log-basic: &basic-log
   logging:
@@ -44,14 +44,19 @@ services:
     environment:
       - "SERVICE_PORT=3000"
       - "GO_ENV=dev"
-      - "LOGGING_LEVEL_ROOT=INFO"
       - "EUREKA_URL=http://eureka-server:8761/eureka"
       - "EUREKA_LOGIN=eureka"
       - "EUREKA_PASSWORD=eureka"
       - "EUREKA_HEARTBEAT_INTERVAL=5s"
-      - "EUREKA_REFRESH_INTERVAL=10s"
+      - "EUREKA_REFRESH_INTERVAL=30s"
       - "REGISTRY_REFRESH_INTERVAL=10s"
-      - "RATE_LIMIT_RPM=50"
+      - "RATE_LIMIT_RPM=15"
+      - "LOGGING_LEVEL_ROOT=INFO"
+#      - "LOGGING_LEVEL_HEADER_AUTH_PROVIDER=TRACE"
+#      - "LOGGING_LEVEL_EUREKA_CLIENT=TRACE"
+#      - "LOGGING_LEVEL_DISCOVERY_REGISTRY=TRACE"
+#      - "LOGGING_LEVEL_SERVICE_RESOLVER=TRACE"
+#      - "LOGGING_LEVEL_FIBER_GATEWAY=TRACE"
     restart: unless-stopped
     ports:
       - "3003:3000"

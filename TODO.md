@@ -23,12 +23,16 @@
 20. Client: advertise custom address / port (for specific deployment cases) - через META
 21. advertise app info url (?) | а как ходить в докер на этот url? только что открывать порт
 22. gRPC gateway 
+23. Pattern matcher
 
 
 ### Middleware
 1. Auth check
 2. Cyberrange auth provider | [common] rest-auth-provider
 3. Timeout support
-4. Metrics / latency measurement
+4. ~~*Metrics / latency measurement*~~ (встроенный в fiber мониторинг + prometheus exporter)
 5. Bulkhead / circuit breaker / etc
 6. ~~*Limiter config*~~
+
+
+см. https://github.com/orange-cloudfoundry/gobis

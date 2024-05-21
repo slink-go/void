@@ -39,7 +39,7 @@ func (sr *discoveryRegistry) refresh() {
 				if _, ok := remotes[appId]; !ok {
 					remotes[appId] = make([]discovery.Remote, 0)
 				}
-				sr.logger.Trace("add item: %T %s", instance, instance)
+				sr.logger.Trace("add instance: %s %s", appId, instance)
 				remotes[appId] = append(remotes[appId], instance)
 			}
 			for k, list := range remotes {
@@ -72,7 +72,6 @@ func (sr *discoveryRegistry) List() []discovery.Remote {
 	result := make([]discovery.Remote, 0)
 	for _, v := range sr.serviceDirectory.List() {
 		vv := v.(*discovery.Remote)
-		sr.logger.Trace("list item: %s", vv)
 		result = append(result, *vv)
 	}
 	return result

@@ -3,6 +3,7 @@ package security
 import (
 	"encoding/base64"
 	"fmt"
+	"github.com/slink-go/logging"
 	"strings"
 )
 
@@ -71,10 +72,13 @@ func (a *tokenAuth) GetValue() interface{} {
 // region - Provider
 
 func NewHttpHeaderAuthProvider() AuthProvider {
-	return &httpHeaderAuthProvider{}
+	return &httpHeaderAuthProvider{
+		logger: logging.GetLogger("header-auth-provider"),
+	}
 }
 
 type httpHeaderAuthProvider struct {
+	logger logging.Logger
 }
 
 func (ap *httpHeaderAuthProvider) Get(args ...string) (Auth, error) {
