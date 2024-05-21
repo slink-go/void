@@ -9,4 +9,6 @@ const (
 	EurekaHeartbeatInterval = "EUREKA_HEARTBEAT_INTERVAL" // default 10s
 	EurekaRefreshInterval   = "EUREKA_REFRESH_INTERVAL"   // default 30s
 	RegistryRefreshInterval = "REGISTRY_REFRESH_INTERVAL" // default 60s
+	RateLimitRPM            = "RATE_LIMIT_RPM"            // rate limit "requests per minute" (for fiber limiter)
+	RateLimitRPS            = "RATE_LIMIT_RPS"            // rate limit "requests per second" (for gin limiter)
 )

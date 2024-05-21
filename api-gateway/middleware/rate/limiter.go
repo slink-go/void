@@ -1,5 +1,7 @@
 package rate
 
+import "math"
+
 type Limiter interface {
 	GetLimit() int
 }
@@ -9,8 +11,12 @@ type rpsLimiter struct {
 }
 
 func NewLimiter(limit int) Limiter {
+	l := limit
+	if l <= 0 {
+		l = math.MaxInt64
+	}
 	return &rpsLimiter{
-		limit: limit,
+		limit: l,
 	}
 }
 

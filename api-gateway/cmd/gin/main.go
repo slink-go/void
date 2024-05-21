@@ -29,7 +29,7 @@ func main() {
 
 	ap := security.NewHttpHeaderAuthProvider()
 	udp := security.NewStubUserDetailsProvider()
-	limiter := rate.NewLimiter(1)
+	limiter := rate.NewLimiter(int(env.Int64OrDefault(env.RateLimitRPS, 0)))
 
 	//reg := createStaticRegistry()
 	reg := createEurekaRegistry()

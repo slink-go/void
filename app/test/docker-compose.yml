@@ -18,6 +18,17 @@ services:
     image: mvkvl/api-gateway-gin:0.0.1
     container_name: api-gateway-gin
     restart: unless-stopped
+    environment:
+      - "SERVICE_PORT=3000"
+      - "GO_ENV=dev"
+      - "LOGGING_LEVEL_ROOT=INFO"
+      - "EUREKA_URL=http://eureka-server:8761/eureka"
+      - "EUREKA_LOGIN=eureka"
+      - "EUREKA_PASSWORD=eureka"
+      - "EUREKA_HEARTBEAT_INTERVAL=5s"
+      - "EUREKA_REFRESH_INTERVAL=10s"
+      - "REGISTRY_REFRESH_INTERVAL=10s"
+      - "RATE_LIMIT_RPS=0"
     ports:
       - "3001:3000"
       - "3002:3001"
@@ -40,6 +51,7 @@ services:
       - "EUREKA_HEARTBEAT_INTERVAL=5s"
       - "EUREKA_REFRESH_INTERVAL=10s"
       - "REGISTRY_REFRESH_INTERVAL=10s"
+      - "RATE_LIMIT_RPM=50"
     restart: unless-stopped
     ports:
       - "3003:3000"
