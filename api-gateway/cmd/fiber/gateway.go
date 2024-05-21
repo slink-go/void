@@ -3,11 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/ansrivas/fiberprometheus/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/csrf"
 	"github.com/gofiber/fiber/v2/middleware/helmet"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/monitor"
 	p "github.com/gofiber/fiber/v2/middleware/proxy"
 	"github.com/gofiber/fiber/v2/utils"
 	"github.com/palantir/stacktrace"
@@ -89,6 +91,17 @@ func (g *FiberBasedGateway) WithRegistry(registry registry.ServiceRegistry) gate
 
 func (g *FiberBasedGateway) setupMiddleware() {
 
+	defer func() {
+		if err := recover(); err != nil {
+			g.logger.Warning("middleware config error: %s", err)
+		}
+	}()
+
+	prometheus := fiberprometheus.New("fiber-api-gateway")
+	prometheus.RegisterAt(g.engine, "/prometheus")
+	//prometheus.SetSkipPaths([]string{"/ping"})
+	g.engine.Use(prometheus.Middleware)
+
 	// logger | должен быть первым, чтобы фиксировать отлупы от другого middleware и latency запросов
 	g.engine.Use(logger.New())
 	//g.engine.Use(g.customLoggingMiddleware)
@@ -120,6 +133,7 @@ func (g *FiberBasedGateway) setupMiddleware() {
 }
 func (g *FiberBasedGateway) setupRouteHandlers() {
 	g.engine.Get("/list", g.listRemotes)
+	g.engine.Get("/monitor", monitor.New(monitor.Config{Title: "VOID API Gateway Monitor"}))
 	g.engine.Get("*", g.proxyHandler)
 	g.engine.Post("*", g.proxyHandler)
 	g.engine.Put("*", g.proxyHandler)

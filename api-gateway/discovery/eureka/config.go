@@ -67,6 +67,8 @@ func (c *Config) WithIp(ip string) *Config {
 	return c
 }
 
+// TODO: WithMeta - поддержка множественных вызовов для установки разных данных
+
 func (c *Config) getInstanceId() string {
 	if c.instanceId != "" {
 		return c.instanceId

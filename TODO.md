@@ -20,8 +20,9 @@
 17. Remote peers filter (?) (by meta, by status, ...)
 18. Static resolver config from file
 19. GinBasedProxy (handle internal routes) (?)
-20. Client: advertise custom address / port (for specific deployment cases)
-
+20. Client: advertise custom address / port (for specific deployment cases) - через META
+21. advertise app info url (?) | а как ходить в докер на этот url? только что открывать порт
+22. gRPC gateway 
 
 
 ### Middleware

@@ -19,7 +19,7 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
-	github.com/rivo/uniseg v0.2.0 // indirect
+	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/rs/zerolog v1.32.0 // indirect
 	github.com/sirupsen/logrus v1.4.2 // indirect
 	github.com/slink-go/go-eureka-client v0.0.0-20240520164500-fd6546467a52 // indirect
