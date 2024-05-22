@@ -2,7 +2,7 @@ package disco
 
 import (
 	"github.com/slink-go/api-gateway/cmd/common/env"
-	"github.com/slink-go/api-gateway/cmd/common/util"
+	"github.com/slink-go/api-gateway/discovery/util"
 	"github.com/slink-go/logging"
 	"os"
 	"time"

@@ -2,8 +2,8 @@ package disco
 
 import (
 	"fmt"
-	"github.com/slink-go/api-gateway/cmd/common/util"
 	"github.com/slink-go/api-gateway/discovery"
+	"github.com/slink-go/api-gateway/discovery/util"
 	d "github.com/slink-go/disco-go"
 	da "github.com/slink-go/disco/common/api"
 	"github.com/slink-go/logger"

@@ -7,6 +7,7 @@ import (
 	"github.com/slink-go/api-gateway/discovery"
 	"github.com/slink-go/api-gateway/discovery/disco"
 	"github.com/slink-go/api-gateway/discovery/eureka"
+	"github.com/slink-go/api-gateway/discovery/static"
 	"github.com/slink-go/api-gateway/middleware/rate"
 	"github.com/slink-go/api-gateway/middleware/security"
 	"github.com/slink-go/api-gateway/proxy"
@@ -68,10 +69,6 @@ func startGateway(title string, port int, dc ...discovery.Client) {
 
 }
 
-func createStaticRegistry() registry.ServiceRegistry {
-	return registry.NewStaticRegistry(common.Services())
-}
-
 func createEurekaClient() discovery.Client {
 	eurekaClientConfig := eureka.Config{}
 	eurekaClientConfig.
@@ -100,5 +97,5 @@ func createDiscoClient() discovery.Client {
 	return dc
 }
 func createStaticClient() discovery.Client {
-	return nil
+	return static.NewStaticClient(common.Services())
 }
