@@ -8,7 +8,7 @@
 5. *~~Log request~~*
 6. *~~Static resolver (+ load balancing)~~*
 7. *~~Eureka service resolver (+ load balancing)~~*
-8. Disco service resolver
+8. *~~Disco service resolver~~*
 9. K8S service resolver
 10. Multiple service resolvers support (static + eureka + disco) (?)
 11. Cookie AuthToken support
@@ -19,11 +19,10 @@
 16. Handle dead peers (connection refused)
 17. Remote peers filter (?) (by meta, by status, ...)
 18. Static resolver config from file
-19. GinBasedProxy (handle internal routes) (?)
-20. Client: advertise custom address / port (for specific deployment cases) - через META
-21. advertise app info url (?) | а как ходить в докер на этот url? только что открывать порт
-22. gRPC gateway 
-23. Pattern matcher
+19. Client: advertise custom address / port (for specific deployment cases) - через META
+20. advertise app info url (?) | а как ходить в докер на этот url? только что открывать порт
+21. gRPC gateway 
+22. Pattern matcher
 
 
 ### Middleware
