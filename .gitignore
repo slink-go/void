@@ -2,3 +2,4 @@ proxy-fiber
 proxy-gin
 .env
 /api-gateway/cmd/backend
+go.sum

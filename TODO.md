@@ -34,5 +34,8 @@
 5. Bulkhead / circuit breaker / etc
 6. ~~*Limiter config*~~
 
+### Disco-Go
+1. применить новый логгер
+2. 
 
 см. https://github.com/orange-cloudfoundry/gobis

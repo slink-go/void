@@ -31,7 +31,10 @@ function build_gw_fiber() {
                --build-arg "UPX_VERSION=${UPX_VERSION}" .
 }
 
-if [ "$1" == "gin" ]; then
+if [[ "$1" == "-h" || "$1" == "help" ]]; then
+  echo "Usage: ./build.sh [ back | gin | fiber ]"
+  exit 1
+elif [ "$1" == "gin" ]; then
   build_gw_gin
 elif [ "$1" == "fiber" ]; then
   build_gw_fiber

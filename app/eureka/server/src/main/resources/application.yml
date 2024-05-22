@@ -33,6 +33,7 @@ logging:
   pattern:
     console: "${LOG_PATTERN:%d{yyyy-MM-dd HH:mm:ss.SSS} %level %msg%n}"
   level:
-    com.netflix.eureka.registry.AbstractInstanceRegistry: ERROR
-    com.netflix.eureka: DEBUG
-    com.netflix.discovery: DEBUG
+    root: ${ROOT_LOGGING_LEVEL:WARN}
+    com.netflix.eureka.registry.AbstractInstanceRegistry: ${CUSTOM_LOGGING_LEVEL:WARN}
+    com.netflix.eureka: ${CUSTOM_LOGGING_LEVEL:WARN}
+    com.netflix.discovery: ${CUSTOM_LOGGING_LEVEL:WARN}

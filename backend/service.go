@@ -6,9 +6,11 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/slink-go/api-gateway/cmd/common/env"
 	"github.com/slink-go/api-gateway/discovery"
+	"github.com/slink-go/api-gateway/discovery/disco"
 	"github.com/slink-go/api-gateway/discovery/eureka"
 	h "github.com/slink-go/api-gateway/middleware/context"
 	"github.com/slink-go/logging"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -18,10 +20,10 @@ type Service struct {
 	logger        logging.Logger
 	applicationId string
 	instanceId    string
-	disco         discovery.Client
+	discovery     discovery.Client
 }
 
-func Create(applicationId, instanceId, boundAddress string) *Service {
+func Create(applicationId, instanceId, boundAddress, discoveryType string) *Service {
 
 	service := Service{
 		logger: logging.GetLogger(
@@ -34,11 +36,11 @@ func Create(applicationId, instanceId, boundAddress string) *Service {
 		),
 		applicationId: applicationId,
 		instanceId:    instanceId,
-		disco:         initEurekaClient(applicationId, instanceId, boundAddress),
+		discovery:     initDiscoveryClient(applicationId, instanceId, boundAddress, discoveryType),
 	}
 
-	if service.disco != nil {
-		if err := service.disco.Connect(); err != nil {
+	if service.discovery != nil {
+		if err := service.discovery.Connect(); err != nil {
 			logging.GetLogger("--").Warning("%s", err)
 		}
 	}
@@ -54,7 +56,7 @@ func Create(applicationId, instanceId, boundAddress string) *Service {
 }
 
 func (s *Service) appsListHandler(c *fiber.Ctx) error {
-	svcs := s.disco.Services()
+	svcs := s.discovery.Services()
 	buff, err := json.Marshal(svcs.List())
 	if err != nil {
 		return err
@@ -86,10 +88,18 @@ func (s *Service) testHandler(c *fiber.Ctx) error {
 }
 
 func (s *Service) getHeaders(c *fiber.Ctx) string {
+	var headers []string
+	for k, _ := range c.GetReqHeaders() {
+		headers = append(headers, k)
+	}
+	slices.Sort(headers)
 	var result []string
-	for k, list := range c.GetReqHeaders() {
-		for _, v := range list {
-			result = append(result, fmt.Sprintf("%s=%s", k, v))
+	for _, h := range headers {
+		list, ok := c.GetReqHeaders()[h]
+		if ok {
+			for _, v := range list {
+				result = append(result, fmt.Sprintf("%s=%s", h, v))
+			}
 		}
 	}
 	return strings.Join(result, ", ")
@@ -128,10 +138,43 @@ func (s *Service) queryParams(c *fiber.Ctx) string {
 	return strings.TrimSuffix(result, ", ")
 }
 
+func initDiscoveryClient(applicationId, instanceId, boundAddress, discoveryService string) discovery.Client {
+	switch discoveryService {
+	case "eureka":
+		return initEurekaClient(applicationId, instanceId, boundAddress)
+	case "disco":
+		return initDiscoClient(applicationId, boundAddress)
+	default:
+		panic(fmt.Errorf("unsupported discovery service: %s", discoveryService))
+	}
+}
+
+func initDiscoClient(applicationId, boundAddress string) discovery.Client {
+	url := env.StringOrDefault(env.DiscoUrl, "")
+	lg := env.StringOrDefault(env.DiscoLogin, "")
+	pw := env.StringOrDefault(env.DiscoPassword, "")
+	if url == "" {
+		return nil
+	}
+	logging.GetLogger("backend").Warning("register on disco (%s)", url)
+
+	port, err := strconv.Atoi(strings.Split(boundAddress, ":")[1])
+	if err != nil {
+		port = 0
+	}
+
+	return disco.NewDiscoClient(
+		disco.NewConfig().
+			WithUrl(url).
+			WithBasicAuth(lg, pw).
+			WithApplication(applicationId).
+			WithPort(port),
+	)
+}
 func initEurekaClient(applicationId, instanceId, boundAddress string) discovery.Client {
-	url := env.StringOrDefault("EUREKA_URL", "")
-	lg := env.StringOrDefault("EUREKA_LOGIN", "")
-	pw := env.StringOrDefault("EUREKA_PASSWORD", "")
+	url := env.StringOrDefault(env.EurekaUrl, "")
+	lg := env.StringOrDefault(env.EurekaLogin, "")
+	pw := env.StringOrDefault(env.EurekaPassword, "")
 	if url == "" {
 		return nil
 	}
@@ -149,7 +192,7 @@ func initEurekaClient(applicationId, instanceId, boundAddress string) discovery.
 			WithHeartBeat(env.DurationOrDefault(env.EurekaHeartbeatInterval, time.Second*10)).
 			WithRefresh(env.DurationOrDefault(env.EurekaRefreshInterval, time.Second*30)).
 			WithApplication(applicationId).
-			WithInstanceId(fmt.Sprintf("%s-%s", applicationId, instanceId)).
+			//WithInstanceId(fmt.Sprintf("%s-%s", applicationId, instanceId)).
 			WithPort(port),
 	)
 }

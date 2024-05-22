@@ -18,15 +18,14 @@ var (
 )
 
 func NewEurekaClient(config *Config) discovery.Client {
-
-	return &EurekaClient{
+	return &Client{
 		config: *config,
 		logger: logging.GetLogger("eureka-client"),
 		sigChn: make(chan os.Signal),
 	}
 }
 
-type EurekaClient struct {
+type Client struct {
 	config       Config
 	mutex        sync.RWMutex
 	client       *e.Client
@@ -36,7 +35,7 @@ type EurekaClient struct {
 	sigChn       chan os.Signal
 }
 
-func (c *EurekaClient) Connect() error {
+func (c *Client) Connect() error {
 
 	c.mutex.Lock()
 	c.running = true
@@ -62,7 +61,7 @@ func (c *EurekaClient) Connect() error {
 
 	return nil
 }
-func (c *EurekaClient) Services() *discovery.Remotes {
+func (c *Client) Services() *discovery.Remotes {
 
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
@@ -82,6 +81,7 @@ func (c *EurekaClient) Services() *discovery.Remotes {
 				r.Port = instance.Port.Port
 			}
 			r.Status = instance.Status
+			c.logger.Debug("add %s: %s", instance.App, r)
 			result.Add(app.Name, r)
 		}
 	}
@@ -90,15 +90,15 @@ func (c *EurekaClient) Services() *discovery.Remotes {
 
 }
 
-func (c *EurekaClient) create() {
+func (c *Client) create() {
 }
-func (c *EurekaClient) register() error {
+func (c *Client) register() error {
 	return c.client.RegisterInstance(c.config.application, c.createInstance())
 }
-func (c *EurekaClient) unregister() error {
+func (c *Client) unregister() error {
 	return c.client.UnregisterInstance(c.config.application, c.config.getInstanceId())
 }
-func (c *EurekaClient) refresh() {
+func (c *Client) refresh() {
 	timer := time.NewTimer(time.Second)
 	for c.running {
 		select {
@@ -117,7 +117,7 @@ func (c *EurekaClient) refresh() {
 	}
 	timer.Stop()
 }
-func (c *EurekaClient) heartbeat() {
+func (c *Client) heartbeat() {
 	timer := time.NewTimer(time.Second)
 	for {
 		select {
@@ -153,7 +153,7 @@ func (c *EurekaClient) heartbeat() {
 	}
 	timer.Stop()
 }
-func (c *EurekaClient) createInstance() *e.InstanceInfo {
+func (c *Client) createInstance() *e.InstanceInfo {
 	dcInfo := &e.DataCenterInfo{
 		Name:  "MyOwn",
 		Class: "com.netflix.appinfo.MyDataCenterInfo", //"com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo",
@@ -174,7 +174,7 @@ func (c *EurekaClient) createInstance() *e.InstanceInfo {
 		CountryId:                     0,
 		InstanceID:                    c.config.getInstanceId(),
 		HomePageUrl:                   fmt.Sprintf("http://%s:%d", c.config.getIP(), c.config.port),
-		HostName:                      c.config.hostname,
+		HostName:                      c.config.getHostname(),
 		//StatusPageUrl:  "", // fmt.Sprintf("http://%s:%d/info", config.IP, config.Port)
 		//HealthCheckUrl: "",
 		//SecurePort:       "",
@@ -190,9 +190,9 @@ func (c *EurekaClient) createInstance() *e.InstanceInfo {
 	//	false,
 	//)
 }
-func (c *EurekaClient) repeat(interval time.Duration, action func(), stopChn <-chan struct{}) {
+func (c *Client) repeat(interval time.Duration, action func(), stopChn <-chan struct{}) {
 }
-func (c *EurekaClient) handleSignal() {
+func (c *Client) handleSignal() {
 	signal.Notify(c.sigChn, syscall.SIGTERM, syscall.SIGINT, syscall.SIGKILL)
 	for {
 		switch <-c.sigChn {
@@ -211,6 +211,7 @@ func (c *EurekaClient) handleSignal() {
 					c.logger.Info("application instance de-registered")
 				}
 			}
+			time.Sleep(time.Second) // чтобы остальные сервисы успели завершиться
 			os.Exit(0)
 		}
 	}

@@ -1,0 +1,32 @@
+
+
+#
+# CUSTOM GATEWAY ROUTES CONFIG
+#
+
+spring:
+  cloud:
+    gateway:
+      routes:
+
+        #
+        # SERVICE-A
+        #
+        - id: service-a
+          uri: lb://SERVICE-A
+          predicates:
+            - Path=/api/service-a/**,/service-a/api/**,
+          filters:
+            - RewritePath=/api/service-a/(?<segment>.*),/api/$\{segment}
+            - RewritePath=/service-a/api/(?<segment>.*),/api/$\{segment}
+
+        #
+        # SERVICE-B
+        #
+        - id: service-b
+          uri: lb://SERVICE-B
+          predicates:
+            - Path=/api/service-b/**,/service-b/api/**,
+          filters:
+            - RewritePath=/api/service-b/(?<segment>.*),/api/$\{segment}
+            - RewritePath=/service-b/api/(?<segment>.*),/api/$\{segment}

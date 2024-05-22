@@ -3,6 +3,9 @@ package eureka
 import (
 	"fmt"
 	"github.com/slink-go/api-gateway/cmd/common/env"
+	"github.com/slink-go/api-gateway/cmd/common/util"
+	"github.com/slink-go/logging"
+	"os"
 	"time"
 )
 
@@ -11,7 +14,7 @@ func NewConfig() *Config {
 		fetch:       false, // disable registry fetching by default
 		register:    false, // disable registration on eureka by default
 		application: "UNKNOWN",
-		hostname:    "localhost",
+		hostname:    "",
 		port:        int(env.Int64OrDefault(env.ServicePort, 0)),
 	}
 }
@@ -66,6 +69,10 @@ func (c *Config) WithIp(ip string) *Config {
 	c.ip = ip
 	return c
 }
+func (c *Config) WithHostname(name string) *Config {
+	c.hostname = name
+	return c
+}
 
 // TODO: WithMeta - поддержка множественных вызовов для установки разных данных
 
@@ -73,11 +80,22 @@ func (c *Config) getInstanceId() string {
 	if c.instanceId != "" {
 		return c.instanceId
 	}
-	return fmt.Sprintf("%s:%s:%d", c.getIP(), c.application, int(env.Int64OrDefault(env.ServicePort, 0)))
+	return fmt.Sprintf("%s:%s:%d", c.application, c.getIP(), c.port)
 }
 func (c *Config) getIP() string {
 	if c.ip != "" {
 		return c.ip
 	}
-	return GetLocalIP()
+	return util.GetLocalIP()
+}
+func (c *Config) getHostname() string {
+	if c.hostname == "" {
+		v, err := os.Hostname()
+		if err != nil {
+			logging.GetLogger("eureka-config").Warning("could not get hostname: %s", err)
+			return "localhost"
+		}
+		return v
+	}
+	return c.hostname
 }

@@ -22,13 +22,13 @@ services:
       - "SERVICE_PORT=3000"
       - "GO_ENV=dev"
       - "LOGGING_LEVEL_ROOT=INFO"
-      - "EUREKA_URL=http://eureka-server:8761/eureka"
+      - "EUREKA_URL=http://eureka:8761/eureka"
       - "EUREKA_LOGIN=eureka"
       - "EUREKA_PASSWORD=eureka"
       - "EUREKA_HEARTBEAT_INTERVAL=5s"
       - "EUREKA_REFRESH_INTERVAL=10s"
       - "REGISTRY_REFRESH_INTERVAL=10s"
-      - "RATE_LIMIT_RPS=0"
+      - "RATE_LIMIT_RPS=1"
     ports:
       - "3001:3000"
       - "3002:3001"
@@ -44,13 +44,13 @@ services:
     environment:
       - "SERVICE_PORT=3000"
       - "GO_ENV=dev"
-      - "EUREKA_URL=http://eureka-server:8761/eureka"
+      - "EUREKA_URL=http://eureka:8761/eureka"
       - "EUREKA_LOGIN=eureka"
       - "EUREKA_PASSWORD=eureka"
       - "EUREKA_HEARTBEAT_INTERVAL=5s"
-      - "EUREKA_REFRESH_INTERVAL=30s"
+      - "EUREKA_REFRESH_INTERVAL=10s"
       - "REGISTRY_REFRESH_INTERVAL=10s"
-      - "RATE_LIMIT_RPM=15"
+      - "RATE_LIMIT_RPM=150"
       - "LOGGING_LEVEL_ROOT=INFO"
 #      - "LOGGING_LEVEL_HEADER_AUTH_PROVIDER=TRACE"
 #      - "LOGGING_LEVEL_EUREKA_CLIENT=TRACE"
@@ -71,11 +71,14 @@ services:
     image: mvkvl/api-backend:0.0.1
     container_name: api-backend
     environment:
-      - "EUREKA_URL=http://eureka-server:8761/eureka"
+      - "EUREKA_URL=http://eureka:8761/eureka"
       - "EUREKA_LOGIN=eureka"
       - "EUREKA_PASSWORD=eureka"
       - "EUREKA_HEARTBEAT_INTERVAL=5s"
       - "EUREKA_REFRESH_INTERVAL=10s"
+      - "DISCO_URL=http://disco:8762"
+      - "DISCO_LOGIN=disco"
+      - "DISCO_PASSWORD=disco"
     restart: unless-stopped
     ports:
       - "3101:3101"
@@ -86,7 +89,28 @@ services:
       - "3203:3203"
     <<: *basic-log
 
-  eureka-server:
+  disco:
+    deploy:
+      resources:
+        limits:
+          cpus: "0.1"
+          memory: "100M"
+    image: slinkgo/disco:alpine
+    container_name: disco
+    ports:
+      - "127.0.0.1:8762:8080"
+    environment:
+#      - DISCO_MAX_CLIENTS=250
+      - DISCO_LIMIT_RATE=1000
+      - DISCO_LIMIT_BURST=1500
+      - DISCO_PING_INTERVAL=1s
+      - DISCO_CLIENT_FAILING_THRESHOLD=3
+      - DISCO_CLIENT_DOWN_THRESHOLD=4
+      - DISCO_CLIENT_REMOVE_THRESHOLD=5
+      - DISCO_USERS=disco:disco
+      - LOGGING_LEVEL=INFO
+    restart: unless-stopped
+  eureka:
     image: mvkvl/eureka-server
     container_name: eureka-server
     restart: unless-stopped
@@ -94,10 +118,26 @@ services:
     environment:
       - "EUREKA_SERVICE_LOGIN=eureka"
       - "EUREKA_SERVICE_PASSWORD=eureka"
+#      - "ROOT_LOGGING_LEVEL=WARN"
+#      - "CUSTOM_LOGGING_LEVEL=WARN"
 #      - "EUREKA_SERVICE_PORT=8761"
 #      - "EUREKA_SERVICE_HOSTNAME=localhost"
     ports:
-      - "8761:8761"
+      - "127.0.0.1:8761:8761"
+    <<: *basic-log
+  gateway:
+    image: mvkvl/cloud-gateway
+    container_name: cloud-gateway
+    restart: unless-stopped
+    stop_grace_period: "2s"
+    environment:
+      - "SERVER_PORT=8080"
+      - "SERVICE_NAME=cloud-gateway"
+      - "EUREKA_DEFAULT_ZONE=http://eureka:eureka@eureka:8761/eureka"
+    volumes:
+      - ./routes:/conf
+    ports:
+      - "127.0.0.1:9993:8080"
     <<: *basic-log
   eureka-client:
     image: mvkvl/eureka-client
@@ -107,8 +147,8 @@ services:
     environment:
       - "CLIENT_SERVER_PORT=8080"
       - "CLIENT_SERVICE_NAME=eureka-client"
-#      - "EUREKA_DEFAULT_ZONE=http://eureka-server:8761/eureka"
-      - "EUREKA_DEFAULT_ZONE=http://eureka:eureka@eureka-server:8761/eureka"
+#      - "EUREKA_DEFAULT_ZONE=http://eureka:8761/eureka"
+      - "EUREKA_DEFAULT_ZONE=http://eureka:eureka@eureka:8761/eureka"
     ports:
-      - "9990:8080"
+      - "127.0.0.1:9990:8080"
     <<: *basic-log
