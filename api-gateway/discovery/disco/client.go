@@ -2,13 +2,13 @@ package disco
 
 import (
 	"fmt"
+	"github.com/slink-go/api-gateway/cmd/common/util"
 	"github.com/slink-go/api-gateway/discovery"
 	d "github.com/slink-go/disco-go"
 	da "github.com/slink-go/disco/common/api"
 	"github.com/slink-go/logger"
 	"github.com/slink-go/logging"
 	"os"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -66,7 +66,7 @@ func (c *Client) Services() *discovery.Remotes {
 				c.logger.Warning("could not find HTTP endpoint for %s", v.ServiceId())
 				continue
 			}
-			host, port := c.parseEndpoint(ep)
+			host, port := util.ParseEndpoint(ep)
 			remote := discovery.Remote{
 				App:    v.ServiceId(),
 				Host:   host,
@@ -78,31 +78,4 @@ func (c *Client) Services() *discovery.Remotes {
 		}
 	}
 	return &result
-}
-
-func (c *Client) parseEndpoint(input string) (string, int) {
-	switch {
-	case strings.HasPrefix(input, "https://"):
-		return c.doParseEndpoint(input, "https://")
-	case strings.HasPrefix(input, "http://"):
-		return c.doParseEndpoint(input, "http://")
-	case strings.HasPrefix(input, "grpcs://"):
-		return c.doParseEndpoint(input, "grpcs://")
-	case strings.HasPrefix(input, "grpc://"):
-		return c.doParseEndpoint(input, "grpc://")
-	default:
-		return input, 0
-	}
-}
-func (c *Client) doParseEndpoint(input, prefix string) (string, int) {
-	suffix := input[len(prefix):]
-	parts := strings.Split(suffix, ":")
-	if len(parts) < 2 {
-		return parts[0], 0
-	}
-	port, err := strconv.Atoi(parts[1])
-	if err != nil {
-		c.logger.Warning("could not parse port value from %s: %s", parts[1], err)
-	}
-	return parts[0], port
 }

@@ -106,6 +106,7 @@ func (c *Client) refresh() {
 			apps, err := c.client.GetApplications()
 			if err != nil {
 				c.logger.Error("refresh failed: %s", err)
+				c.applications = nil
 			} else {
 				c.mutex.Lock()
 				c.applications = apps

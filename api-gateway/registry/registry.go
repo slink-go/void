@@ -9,24 +9,24 @@ import (
 	"time"
 )
 
-type discoveryRegistry struct {
+type serviceRegistry struct {
 	serviceDirectory *ringBuffers // TODO: implement periodic refresh | при обновлении собьётся ringBuffer; можно ли что-то с этим сделать? стоит ли это делать?
-	client           discovery.Client
+	clients          []discovery.Client
 	mutex            sync.RWMutex
 	logger           logging.Logger
 }
 
-func NewDiscoveryRegistry(client discovery.Client) ServiceRegistry {
-	registry := discoveryRegistry{
+func NewServiceRegistry(clients ...discovery.Client) ServiceRegistry {
+	registry := serviceRegistry{
 		serviceDirectory: nil,
-		client:           client,
+		clients:          clients,
 		logger:           logging.GetLogger("discovery-registry"),
 	}
 	go registry.refresh()
 	return &registry
 }
 
-func (sr *discoveryRegistry) refresh() {
+func (sr *serviceRegistry) refresh() {
 	timer := time.NewTimer(5 * time.Second)
 	interval := env.DurationOrDefault(env.RegistryRefreshInterval, time.Second*60)
 	for {
@@ -34,13 +34,18 @@ func (sr *discoveryRegistry) refresh() {
 		case <-timer.C:
 			remotes := make(map[string][]discovery.Remote)
 			directory := createRingBuffers()
-			for _, instance := range sr.client.Services().List() {
-				appId := strings.ToUpper(instance.App)
-				if _, ok := remotes[appId]; !ok {
-					remotes[appId] = make([]discovery.Remote, 0)
+			for _, client := range sr.clients {
+				if client == nil {
+					continue
 				}
-				sr.logger.Trace("add instance: %s %s", appId, instance)
-				remotes[appId] = append(remotes[appId], instance)
+				for _, instance := range client.Services().List() {
+					appId := strings.ToUpper(instance.App)
+					if _, ok := remotes[appId]; !ok {
+						remotes[appId] = make([]discovery.Remote, 0)
+					}
+					sr.logger.Trace("[%T] add instance: %s %s", client, appId, instance)
+					remotes[appId] = append(remotes[appId], instance)
+				}
 			}
 			for k, list := range remotes {
 				directory.New(k, len(list))
@@ -58,7 +63,7 @@ func (sr *discoveryRegistry) refresh() {
 	timer.Stop()
 }
 
-func (sr *discoveryRegistry) Get(serviceName string) (string, error) {
+func (sr *serviceRegistry) Get(serviceName string) (string, error) {
 	sr.mutex.RLock()
 	defer sr.mutex.RUnlock()
 	v, ok := sr.serviceDirectory.Next(serviceName)
@@ -68,7 +73,7 @@ func (sr *discoveryRegistry) Get(serviceName string) (string, error) {
 	url := v.Next().Value.(*discovery.Remote)
 	return (*url).String(), nil
 }
-func (sr *discoveryRegistry) List() []discovery.Remote {
+func (sr *serviceRegistry) List() []discovery.Remote {
 	result := make([]discovery.Remote, 0)
 	for _, v := range sr.serviceDirectory.List() {
 		vv := v.(*discovery.Remote)
