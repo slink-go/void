@@ -11,7 +11,7 @@
 	</parent>
 
 	<groupId>ws.slink</groupId>
-	<artifactId>eureka-client</artifactId>
+	<artifactId>gateway</artifactId>
 	<version>0.0.1</version>
 	<name></name>
 	<description></description>
@@ -22,14 +22,22 @@
 	</properties>
 
 	<dependencies>
-		<dependency>
-			<groupId>org.springframework.cloud</groupId>
-			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-web</artifactId>
-		</dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-gateway</artifactId>
+        </dependency> <!-- spring-cloud-starter-gateway -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+        </dependency> <!-- spring-cloud-starter-netflix-eureka-client -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency> <!-- spring-boot-starter-aop -->
+        <dependency>
+            <groupId>org.springframework.retry</groupId>
+            <artifactId>spring-retry</artifactId>
+        </dependency> <!-- spring-retry -->
 	</dependencies>
 
 	<dependencyManagement>
@@ -51,6 +59,15 @@
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
 		</plugins>
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+				<excludes>
+					<exclude>*.yml</exclude>
+				</excludes>
+				<filtering>false</filtering>
+			</resource>
+		</resources>
 	</build>
 
 	<repositories>

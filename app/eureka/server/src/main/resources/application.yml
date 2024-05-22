@@ -24,6 +24,7 @@ eureka:
     fetch-registry: false
   instance:
     hostname: ${EUREKA_SERVICE_HOSTNAME:localhost}
+    preferIpAddress: true
   server:
     renewal-percent-threshold: ${EUREKA_RENEWAL_PERCENT_THRESHOLD:0.85}
     eviction-interval-timer-in-ms: ${EUREKA_EVICTION_INTERVAL_MS:5000}
