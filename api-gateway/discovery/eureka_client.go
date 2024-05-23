@@ -1,9 +1,8 @@
-package eureka
+package discovery
 
 import (
 	"errors"
 	"fmt"
-	"github.com/slink-go/api-gateway/discovery"
 	e "github.com/slink-go/go-eureka-client/eureka"
 	"github.com/slink-go/logging"
 	"os"
@@ -17,16 +16,16 @@ var (
 	ErrNotFound = errors.New("not found")
 )
 
-func NewEurekaClient(config *Config) discovery.Client {
-	return &Client{
+func NewEurekaClient(config *eurekaConfig) Client {
+	return &eurekaClient{
 		config: *config,
 		logger: logging.GetLogger("eureka-client"),
 		sigChn: make(chan os.Signal),
 	}
 }
 
-type Client struct {
-	config       Config
+type eurekaClient struct {
+	config       eurekaConfig
 	mutex        sync.RWMutex
 	client       *e.Client
 	logger       logging.Logger
@@ -35,7 +34,7 @@ type Client struct {
 	sigChn       chan os.Signal
 }
 
-func (c *Client) Connect() error {
+func (c *eurekaClient) Connect() error {
 
 	c.mutex.Lock()
 	c.running = true
@@ -61,7 +60,7 @@ func (c *Client) Connect() error {
 
 	return nil
 }
-func (c *Client) Services() *discovery.Remotes {
+func (c *eurekaClient) Services() *Remotes {
 
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
@@ -70,16 +69,17 @@ func (c *Client) Services() *discovery.Remotes {
 		return nil
 	}
 
-	result := discovery.Remotes{}
+	result := Remotes{}
 	for _, app := range c.applications.Applications {
 		for _, instance := range app.Instances {
-			r := discovery.Remote{
+			r := Remote{
 				App:  app.Name,
 				Host: instance.IpAddr,
 			}
 			if instance.Port != nil {
 				r.Port = instance.Port.Port
 			}
+			r.Scheme = "http" // TODO: parse meta to get correct scheme
 			r.Status = instance.Status
 			c.logger.Debug("add %s: %s", instance.App, r)
 			result.Add(app.Name, r)
@@ -90,15 +90,15 @@ func (c *Client) Services() *discovery.Remotes {
 
 }
 
-func (c *Client) create() {
+func (c *eurekaClient) create() {
 }
-func (c *Client) register() error {
+func (c *eurekaClient) register() error {
 	return c.client.RegisterInstance(c.config.application, c.createInstance())
 }
-func (c *Client) unregister() error {
+func (c *eurekaClient) unregister() error {
 	return c.client.UnregisterInstance(c.config.application, c.config.getInstanceId())
 }
-func (c *Client) refresh() {
+func (c *eurekaClient) refresh() {
 	timer := time.NewTimer(time.Second)
 	for c.running {
 		select {
@@ -118,7 +118,7 @@ func (c *Client) refresh() {
 	}
 	timer.Stop()
 }
-func (c *Client) heartbeat() {
+func (c *eurekaClient) heartbeat() {
 	timer := time.NewTimer(time.Second)
 	for {
 		select {
@@ -154,7 +154,7 @@ func (c *Client) heartbeat() {
 	}
 	timer.Stop()
 }
-func (c *Client) createInstance() *e.InstanceInfo {
+func (c *eurekaClient) createInstance() *e.InstanceInfo {
 	dcInfo := &e.DataCenterInfo{
 		Name:  "MyOwn",
 		Class: "com.netflix.appinfo.MyDataCenterInfo", //"com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo",
@@ -191,9 +191,9 @@ func (c *Client) createInstance() *e.InstanceInfo {
 	//	false,
 	//)
 }
-func (c *Client) repeat(interval time.Duration, action func(), stopChn <-chan struct{}) {
+func (c *eurekaClient) repeat(interval time.Duration, action func(), stopChn <-chan struct{}) {
 }
-func (c *Client) handleSignal() {
+func (c *eurekaClient) handleSignal() {
 	signal.Notify(c.sigChn, syscall.SIGTERM, syscall.SIGINT, syscall.SIGKILL)
 	for {
 		switch <-c.sigChn {

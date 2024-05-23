@@ -10,6 +10,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/monitor"
+	"github.com/gofiber/fiber/v2/middleware/pprof"
 	p "github.com/gofiber/fiber/v2/middleware/proxy"
 	"github.com/gofiber/fiber/v2/utils"
 	"github.com/palantir/stacktrace"
@@ -90,6 +91,8 @@ func (g *FiberBasedGateway) WithRegistry(registry registry.ServiceRegistry) gate
 }
 
 func (g *FiberBasedGateway) setupMiddleware(address string) {
+
+	g.engine.Use(pprof.New())
 
 	p := fiberprometheus.New(fmt.Sprintf("fiber-api-gateway:%s", address))
 	p.RegisterAt(g.engine, "/prometheus")

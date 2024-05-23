@@ -4,10 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/pprof"
 	"github.com/slink-go/api-gateway/cmd/common/env"
 	"github.com/slink-go/api-gateway/discovery"
-	"github.com/slink-go/api-gateway/discovery/disco"
-	"github.com/slink-go/api-gateway/discovery/eureka"
 	h "github.com/slink-go/api-gateway/middleware/context"
 	"github.com/slink-go/logging"
 	"slices"
@@ -21,9 +20,14 @@ type Service struct {
 	applicationId string
 	instanceId    string
 	discovery     discovery.Client
+	address       string
 }
 
 func Create(applicationId, instanceId, boundAddress, discoveryType string) *Service {
+	dc := initDiscoveryClient(applicationId, instanceId, boundAddress, discoveryType)
+	if dc == nil {
+		return nil
+	}
 
 	service := Service{
 		logger: logging.GetLogger(
@@ -34,25 +38,29 @@ func Create(applicationId, instanceId, boundAddress, discoveryType string) *Serv
 				strings.ToLower(instanceId),
 			),
 		),
+		address:       boundAddress,
 		applicationId: applicationId,
 		instanceId:    instanceId,
-		discovery:     initDiscoveryClient(applicationId, instanceId, boundAddress, discoveryType),
+		discovery:     dc,
 	}
+	return &service
+}
+func (s *Service) Start() {
 
-	if service.discovery != nil {
-		if err := service.discovery.Connect(); err != nil {
+	if s.discovery != nil {
+		if err := s.discovery.Connect(); err != nil {
 			logging.GetLogger("--").Warning("%s", err)
 		}
 	}
 
 	app := fiber.New()
-	app.Get("/", service.rootHandler)
-	app.Get("/api/test", service.testHandler)
-	app.Get("/api/slow", service.slowHandler)
-	app.Get("/api/apps", service.appsListHandler)
-	app.Listen(boundAddress)
+	app.Use(pprof.New())
+	app.Get("/", s.rootHandler)
+	app.Get("/api/test", s.testHandler)
+	app.Get("/api/slow", s.slowHandler)
+	app.Get("/api/apps", s.appsListHandler)
+	app.Listen(s.address)
 
-	return &service
 }
 
 func (s *Service) appsListHandler(c *fiber.Ctx) error {
@@ -145,7 +153,8 @@ func initDiscoveryClient(applicationId, instanceId, boundAddress, discoveryServi
 	case "disco":
 		return initDiscoClient(applicationId, boundAddress)
 	default:
-		panic(fmt.Errorf("unsupported discovery service: %s", discoveryService))
+		return nil
+		//panic(fmt.Errorf("unsupported discovery service: %s", discoveryService))
 	}
 }
 
@@ -163,8 +172,8 @@ func initDiscoClient(applicationId, boundAddress string) discovery.Client {
 		port = 0
 	}
 
-	return disco.NewDiscoClient(
-		disco.NewConfig().
+	return discovery.NewDiscoClient(
+		discovery.NewDiscoClientConfig().
 			WithUrl(url).
 			WithBasicAuth(lg, pw).
 			WithApplication(applicationId).
@@ -185,8 +194,8 @@ func initEurekaClient(applicationId, instanceId, boundAddress string) discovery.
 		port = 0
 	}
 
-	return eureka.NewEurekaClient(
-		eureka.NewConfig().
+	return discovery.NewEurekaClient(
+		discovery.NewEurekaClientConfig().
 			WithUrl(url).
 			WithAuth(lg, pw).
 			WithHeartBeat(env.DurationOrDefault(env.EurekaHeartbeatInterval, time.Second*10)).

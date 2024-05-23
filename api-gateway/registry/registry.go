@@ -27,7 +27,7 @@ func NewServiceRegistry(clients ...discovery.Client) ServiceRegistry {
 }
 
 func (sr *serviceRegistry) refresh() {
-	timer := time.NewTimer(5 * time.Second)
+	timer := time.NewTimer(env.DurationOrDefault(env.RegistryRefreshInitialDelay, time.Second*5))
 	interval := env.DurationOrDefault(env.RegistryRefreshInterval, time.Second*60)
 	for {
 		select {

@@ -1,4 +1,4 @@
-package eureka
+package discovery
 
 import (
 	"fmt"
@@ -9,8 +9,8 @@ import (
 	"time"
 )
 
-func NewConfig() *Config {
-	return &Config{
+func NewEurekaClientConfig() *eurekaConfig {
+	return &eurekaConfig{
 		fetch:       false, // disable registry fetching by default
 		register:    false, // disable registration on eureka by default
 		application: "UNKNOWN",
@@ -19,7 +19,7 @@ func NewConfig() *Config {
 	}
 }
 
-type Config struct {
+type eurekaConfig struct {
 	url               string // eureka server url
 	login             string // [optional] eureka server access login
 	password          string // [optional] eureka server access password
@@ -34,61 +34,61 @@ type Config struct {
 	hostname          string
 }
 
-func (c *Config) WithUrl(url string) *Config {
+func (c *eurekaConfig) WithUrl(url string) *eurekaConfig {
 	c.url = url
 	return c
 }
-func (c *Config) WithAuth(login, password string) *Config {
+func (c *eurekaConfig) WithAuth(login, password string) *eurekaConfig {
 	c.login = login
 	c.password = password
 	return c
 }
-func (c *Config) WithHeartBeat(interval time.Duration) *Config {
+func (c *eurekaConfig) WithHeartBeat(interval time.Duration) *eurekaConfig {
 	c.register = true
 	c.heartBeatInterval = interval
 	return c
 }
-func (c *Config) WithRefresh(interval time.Duration) *Config {
+func (c *eurekaConfig) WithRefresh(interval time.Duration) *eurekaConfig {
 	c.fetch = true
 	c.refreshInterval = interval
 	return c
 }
-func (c *Config) WithApplication(name string) *Config {
+func (c *eurekaConfig) WithApplication(name string) *eurekaConfig {
 	c.application = name
 	return c
 }
-func (c *Config) WithInstanceId(id string) *Config {
+func (c *eurekaConfig) WithInstanceId(id string) *eurekaConfig {
 	c.instanceId = id
 	return c
 }
-func (c *Config) WithPort(port int) *Config {
+func (c *eurekaConfig) WithPort(port int) *eurekaConfig {
 	c.port = port
 	return c
 }
-func (c *Config) WithIp(ip string) *Config {
+func (c *eurekaConfig) WithIp(ip string) *eurekaConfig {
 	c.ip = ip
 	return c
 }
-func (c *Config) WithHostname(name string) *Config {
+func (c *eurekaConfig) WithHostname(name string) *eurekaConfig {
 	c.hostname = name
 	return c
 }
 
 // TODO: WithMeta - поддержка множественных вызовов для установки разных данных
 
-func (c *Config) getInstanceId() string {
+func (c *eurekaConfig) getInstanceId() string {
 	if c.instanceId != "" {
 		return c.instanceId
 	}
 	return fmt.Sprintf("%s:%s:%d", c.application, c.getIP(), c.port)
 }
-func (c *Config) getIP() string {
+func (c *eurekaConfig) getIP() string {
 	if c.ip != "" {
 		return c.ip
 	}
 	return util.GetLocalIP()
 }
-func (c *Config) getHostname() string {
+func (c *eurekaConfig) getHostname() string {
 	if c.hostname == "" {
 		v, err := os.Hostname()
 		if err != nil {

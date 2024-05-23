@@ -1,12 +1,10 @@
-package disco
+package discovery
 
 import (
 	"fmt"
-	"github.com/slink-go/api-gateway/discovery"
 	"github.com/slink-go/api-gateway/discovery/util"
 	d "github.com/slink-go/disco-go"
 	da "github.com/slink-go/disco/common/api"
-	"github.com/slink-go/logger"
 	"github.com/slink-go/logging"
 	"os"
 	"strings"
@@ -14,37 +12,37 @@ import (
 	"time"
 )
 
-func NewDiscoClient(config *Config) discovery.Client {
-	return &Client{
+func NewDiscoClient(config *discoConfig) Client {
+	return &discoClient{
 		config: *config,
 		logger: logging.GetLogger("disco-client"),
 		sigChn: make(chan os.Signal),
 	}
 }
 
-type Client struct {
-	config Config
+type discoClient struct {
+	config discoConfig
 	mutex  sync.RWMutex
 	client d.DiscoClient
 	logger logging.Logger
 	sigChn chan os.Signal
 }
 
-func (c *Client) Connect() error {
+func (c *discoClient) Connect() error {
+	cfg := d.
+		EmptyConfig().
+		WithDisco([]string{c.config.url}).
+		//WithBreaker(c.config.breakThreshold).
+		WithRetry(c.config.retryAttempts, c.config.retryDelay).
+		WithTimeout(c.config.timeout).
+		WithAuth(c.config.login, c.config.password).
+		WithName(c.config.application).
+		WithEndpoints([]string{fmt.Sprintf("%s://%s:%d", "http", c.config.getIP(), c.config.port)})
+	//WithMeta()
 	for {
-		cfg := d.
-			EmptyConfig().
-			WithDisco([]string{c.config.url}).
-			//WithBreaker(c.config.breakThreshold).
-			WithRetry(c.config.retryAttempts, c.config.retryDelay).
-			WithTimeout(c.config.timeout).
-			WithAuth(c.config.login, c.config.password).
-			WithName(c.config.application).
-			WithEndpoints([]string{fmt.Sprintf("%s://%s:%d", "http", c.config.getIP(), c.config.port)})
-		//WithMeta()
 		clnt, err := d.NewDiscoHttpClient(cfg)
 		if err != nil {
-			logger.Warning("join error: %s", strings.TrimSpace(err.Error()))
+			c.logger.Warning("join error: %s", strings.TrimSpace(err.Error()))
 			time.Sleep(5 * time.Second) // TODO: need configurable retry interval
 			continue
 		}
@@ -53,11 +51,11 @@ func (c *Client) Connect() error {
 	}
 	return nil
 }
-func (c *Client) Services() *discovery.Remotes {
+func (c *discoClient) Services() *Remotes {
 	if c.client == nil {
 		return nil
 	}
-	result := discovery.Remotes{}
+	result := Remotes{}
 	appId := strings.ToUpper(c.config.application)
 	for _, v := range c.client.Registry().List() {
 		if da.ClientStateUp == v.State() && v.ServiceId() != appId {
@@ -66,9 +64,10 @@ func (c *Client) Services() *discovery.Remotes {
 				c.logger.Warning("could not find HTTP endpoint for %s", v.ServiceId())
 				continue
 			}
-			host, port := util.ParseEndpoint(ep)
-			remote := discovery.Remote{
+			scheme, host, port := util.ParseEndpoint(ep)
+			remote := Remote{
 				App:    v.ServiceId(),
+				Scheme: scheme,
 				Host:   host,
 				Port:   port,
 				Status: "UP",

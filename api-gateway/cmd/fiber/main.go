@@ -5,9 +5,6 @@ import (
 	"github.com/slink-go/api-gateway/cmd/common"
 	"github.com/slink-go/api-gateway/cmd/common/env"
 	"github.com/slink-go/api-gateway/discovery"
-	"github.com/slink-go/api-gateway/discovery/disco"
-	"github.com/slink-go/api-gateway/discovery/eureka"
-	"github.com/slink-go/api-gateway/discovery/static"
 	"github.com/slink-go/api-gateway/middleware/rate"
 	"github.com/slink-go/api-gateway/middleware/security"
 	"github.com/slink-go/api-gateway/proxy"
@@ -70,32 +67,38 @@ func startGateway(title string, port int, dc ...discovery.Client) {
 }
 
 func createEurekaClient() discovery.Client {
-	eurekaClientConfig := eureka.Config{}
-	eurekaClientConfig.
-		WithUrl(env.StringOrDefault(env.EurekaUrl, "")).
-		WithAuth(
-			env.StringOrDefault(env.EurekaLogin, ""),
-			env.StringOrDefault(env.EurekaPassword, ""),
-		).
-		WithRefresh(env.DurationOrDefault(env.EurekaRefreshInterval, time.Second*30)).
-		WithApplication("fiber-gateway")
-	dc := eureka.NewEurekaClient(&eurekaClientConfig) // eureka discovery client
+	dc := discovery.NewEurekaClient(
+		discovery.NewEurekaClientConfig().
+			WithUrl(env.StringOrDefault(env.EurekaUrl, "")).
+			WithAuth(
+				env.StringOrDefault(env.EurekaLogin, ""),
+				env.StringOrDefault(env.EurekaPassword, ""),
+			).
+			WithRefresh(env.DurationOrDefault(env.EurekaRefreshInterval, time.Second*30)).
+			WithApplication("fiber-gateway"),
+	)
 	dc.Connect()
 	return dc
 }
 func createDiscoClient() discovery.Client {
-	discoClientConfig := disco.Config{}
-	discoClientConfig.
-		WithUrl(env.StringOrDefault(env.DiscoUrl, "")).
-		WithBasicAuth(
-			env.StringOrDefault(env.DiscoLogin, ""),
-			env.StringOrDefault(env.DiscoPassword, ""),
-		).
-		WithApplication("fiber-gateway")
-	dc := disco.NewDiscoClient(&discoClientConfig) // disco discovery client
+	dc := discovery.NewDiscoClient(
+		discovery.NewDiscoClientConfig().
+			WithUrl(env.StringOrDefault(env.DiscoUrl, "")).
+			WithBasicAuth(
+				env.StringOrDefault(env.DiscoLogin, ""),
+				env.StringOrDefault(env.DiscoPassword, ""),
+			).
+			WithApplication("fiber-gateway"),
+	)
 	dc.Connect()
 	return dc
 }
 func createStaticClient() discovery.Client {
-	return static.NewStaticClient(common.Services())
+	filePath := env.StringOrDefault(env.StaticRegistryFile, "")
+	v, err := discovery.LoadFromFile(filePath)
+	if err != nil {
+		logging.GetLogger("main").Error("static registry initialization error ('%s'): %s", filePath, err)
+		return nil
+	}
+	return v
 }

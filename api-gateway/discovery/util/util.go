@@ -22,19 +22,27 @@ func GetLocalIP() string {
 	return ""
 }
 
-func ParseEndpoint(input string) (string, int) {
+func ParseEndpoint(input string) (string, string, int) {
+	scheme := "http"
+	host := ""
+	port := 0
 	switch {
 	case strings.HasPrefix(input, "https://"):
-		return doParseEndpoint(input, "https://")
+		scheme = "https"
+		host, port = doParseEndpoint(input, "https://")
 	case strings.HasPrefix(input, "http://"):
-		return doParseEndpoint(input, "http://")
+		scheme = "http"
+		host, port = doParseEndpoint(input, "http://")
 	case strings.HasPrefix(input, "grpcs://"):
-		return doParseEndpoint(input, "grpcs://")
+		scheme = "grpcs"
+		host, port = doParseEndpoint(input, "grpcs://")
 	case strings.HasPrefix(input, "grpc://"):
-		return doParseEndpoint(input, "grpc://")
+		scheme = "grpc"
+		host, port = doParseEndpoint(input, "grpc://")
 	default:
-		return input, 0
+		host, port = doParseEndpoint(input, "http://")
 	}
+	return scheme, host, port
 }
 func doParseEndpoint(input, prefix string) (string, int) {
 	suffix := input[len(prefix):]
