@@ -4,8 +4,11 @@ import (
 	"github.com/slink-go/api-gateway/cmd/common/env"
 	"github.com/slink-go/api-gateway/discovery"
 	"github.com/slink-go/logging"
+	"os"
+	"os/signal"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -14,6 +17,7 @@ type serviceRegistry struct {
 	clients          []discovery.Client
 	mutex            sync.RWMutex
 	logger           logging.Logger
+	sigChn           chan os.Signal
 }
 
 func NewServiceRegistry(clients ...discovery.Client) ServiceRegistry {
@@ -21,8 +25,13 @@ func NewServiceRegistry(clients ...discovery.Client) ServiceRegistry {
 		serviceDirectory: nil,
 		clients:          clients,
 		logger:           logging.GetLogger("discovery-registry"),
+		sigChn:           make(chan os.Signal),
 	}
+
+	signal.Notify(registry.sigChn, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
+
 	go registry.refresh()
+
 	return &registry
 }
 
@@ -31,6 +40,10 @@ func (sr *serviceRegistry) refresh() {
 	interval := env.DurationOrDefault(env.RegistryRefreshInterval, time.Second*60)
 	for {
 		select {
+		case <-sr.sigChn:
+			sr.logger.Info("stop")
+			timer.Stop()
+			return
 		case <-timer.C:
 			remotes := make(map[string][]discovery.Remote)
 			directory := createRingBuffers()
@@ -60,7 +73,6 @@ func (sr *serviceRegistry) refresh() {
 		}
 		timer.Reset(interval)
 	}
-	timer.Stop()
 }
 
 func (sr *serviceRegistry) Get(serviceName string) (string, error) {

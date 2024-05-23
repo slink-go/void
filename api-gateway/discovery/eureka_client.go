@@ -120,7 +120,7 @@ func (c *eurekaClient) refresh() {
 }
 func (c *eurekaClient) heartbeat() {
 	timer := time.NewTimer(time.Second)
-	for {
+	for c.running {
 		select {
 		case <-timer.C:
 			err := c.register()
@@ -202,6 +202,7 @@ func (c *eurekaClient) handleSignal() {
 		case syscall.SIGKILL:
 			fallthrough
 		case syscall.SIGTERM:
+			c.running = false
 			c.logger.Info("receive exit signal")
 			if c.config.register {
 				c.logger.Info("client instance going to de-register")
@@ -212,8 +213,8 @@ func (c *eurekaClient) handleSignal() {
 					c.logger.Info("application instance de-registered")
 				}
 			}
-			time.Sleep(time.Second) // чтобы остальные сервисы успели завершиться
-			os.Exit(0)
+			//time.Sleep(time.Second) // чтобы остальные сервисы успели завершиться
+			return
 		}
 	}
 }

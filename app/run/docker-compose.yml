@@ -22,7 +22,7 @@ services:
       - "SERVICE_PORT=3000"
       - "GO_ENV=dev"
 
-#      - "EUREKA_URL=http://eureka:8761/eureka"
+      - "EUREKA_URL=http://eureka:8761/eureka"
       - "EUREKA_LOGIN=eureka"
       - "EUREKA_PASSWORD=eureka"
       - "EUREKA_HEARTBEAT_INTERVAL=5s"
@@ -44,7 +44,8 @@ services:
       - "LOGGING_LEVEL_ROOT=DEBUG"
 #      - "LOGGING_LEVEL_HEADER_AUTH_PROVIDER=TRACE"
 #      - "LOGGING_LEVEL_EUREKA_CLIENT=TRACE"
-#      - "LOGGING_LEVEL_DISCOVERY_REGISTRY=TRACE"
+      - "LOGGING_LEVEL_DISCO_CLIENT=TRACE"
+      - "LOGGING_LEVEL_DISCOVERY_REGISTRY=TRACE"
 #      - "LOGGING_LEVEL_SERVICE_RESOLVER=TRACE"
 #      - "LOGGING_LEVEL_FIBER_GATEWAY=TRACE"
     volumes:

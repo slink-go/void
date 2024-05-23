@@ -34,8 +34,6 @@ func main() {
 
 	if port > 0 {
 		startGateway("common", port, ec, dc, sc)
-		//startGateway("eureka", port+1, ec)
-		//startGateway("disco", port+2, dc)
 	} else {
 		panic("service port not set")
 	}

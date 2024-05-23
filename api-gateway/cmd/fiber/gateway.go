@@ -14,6 +14,7 @@ import (
 	p "github.com/gofiber/fiber/v2/middleware/proxy"
 	"github.com/gofiber/fiber/v2/utils"
 	"github.com/palantir/stacktrace"
+	"github.com/slink-go/api-gateway/cmd/fiber/templates"
 	"github.com/slink-go/api-gateway/gateway"
 	"github.com/slink-go/api-gateway/middleware/context"
 	"github.com/slink-go/api-gateway/middleware/rate"
@@ -28,11 +29,11 @@ import (
 )
 
 func NewFiberBasedGateway() gateway.Gateway {
-	gateway := FiberBasedGateway{
+	gw := FiberBasedGateway{
 		logger:          logging.GetLogger("fiber-gateway"),
 		contextProvider: context.CreateContextProvider(),
 	}
-	return &gateway
+	return &gw
 }
 
 type FiberBasedGateway struct {
@@ -48,7 +49,9 @@ func (g *FiberBasedGateway) Serve(address string) {
 	g.engine = fiber.New()
 	g.setupMiddleware(address)
 	g.setupRouteHandlers()
-	g.engine.Listen(address)
+	if err := g.engine.Listen(address); err != nil {
+		panic(err)
+	}
 }
 
 func (g *FiberBasedGateway) WithAuthProvider(ap security.AuthProvider) gateway.Gateway {
@@ -130,14 +133,23 @@ func (g *FiberBasedGateway) setupMiddleware(address string) {
 
 }
 func (g *FiberBasedGateway) setupRouteHandlers() {
-	g.engine.Get("/list", g.listRemotes)
-	g.engine.Get("/monitor", monitor.New(monitor.Config{Title: "VOID API Gateway Monitor"}))
+	g.engine.Get("/x", g.monitoringPage)
+	g.engine.Static("/x/s", "./static")
+	g.engine.Get("/x/list", g.listRemotes)
+	g.engine.Get("/x/monitor", monitor.New(monitor.Config{Title: "VOID API Gateway Monitor"}))
 	g.engine.Get("*", g.proxyHandler)
 	g.engine.Post("*", g.proxyHandler)
 	g.engine.Put("*", g.proxyHandler)
 	g.engine.Delete("*", g.proxyHandler)
 	g.engine.Head("*", g.proxyHandler)
 	g.engine.Options("*", g.proxyHandler)
+}
+
+func (g *FiberBasedGateway) monitoringPage(c *fiber.Ctx) error {
+	c.Set("Content-Type", "text/html")
+	t := templates.ServicesPage(templates.Cards(g.registry.List()))
+	err := t.Render(c.Context(), c.Response().BodyWriter())
+	return err
 }
 
 func (g *FiberBasedGateway) listRemotes(c *fiber.Ctx) error {

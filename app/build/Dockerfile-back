@@ -6,11 +6,11 @@ COPY        /   /src
 WORKDIR         /src/backend
 RUN CGO_ENABLED=0 GOOS=linux go get && go mod tidy
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /backend .
-#RUN upx --best -o /backend-packed  /backend
+RUN upx --best -o /backend-packed  /backend
 
 FROM scratch
 
-#COPY --from=build   /backend-packed   /backend
-COPY --from=build   /backend   /backend
+COPY --from=build   /backend-packed   /backend
+#COPY --from=build   /backend   /backend
 
 CMD ["/backend"]

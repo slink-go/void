@@ -1,0 +1,62 @@
+package templates
+
+import "fmt"
+
+templ ServicesPage(cards []Card) {
+    <html>
+        <head>
+            <link rel="stylesheet" href="/x/s/mini-default.min.css"/>
+        </head>
+        <body>
+            <div class="row" style="vertical-align: top">
+                <div class="col-sm-6">
+                    <p class="doc">
+                        <h1>
+                            Registered Services
+                        </h1>
+                    </p>
+                </div>
+                <div class="col-sm-6" style="text-align: right">
+                    <p class="doc">
+                        <h1>
+                            <a href="/x/monitor">monitor</a>
+                        </h1>
+                    </p>
+                </div>
+            </div>
+            <hr/>
+            <div class="container" style="padding: 0.25rem">
+                <div class="row">
+                    @Services(cards)
+                </div>
+            </div>
+        </body>
+    </html>
+}
+
+templ Services(cards []Card) {
+    for _, card := range cards {
+        <div class="card fluid">
+            @templ.Raw(fmt.Sprintf("<div class=\"section\" style=\"background-color: %s\">", card.Color))
+                <h3 class="doc">{ card.Title }</h3>
+            @templ.Raw("</div>")
+            <div class="section">
+                @Instances( card.Instances )
+            </div>
+        </div>
+    }
+}
+
+templ Instances(instances []string) {
+    <div class="section">
+        <ul>
+        for _, item := range instances {
+            <li>
+                <p class="doc>">
+                    { item }
+                </p>
+            </li>
+        }
+        </ul>
+    </div>
+}
