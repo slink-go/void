@@ -79,11 +79,13 @@ func createEurekaClient() discovery.Client {
 				env.StringOrDefault(env.EurekaPassword, ""),
 			).
 			WithRefresh(env.DurationOrDefault(env.EurekaRefreshInterval, time.Second*30)).
-			WithApplication("fiber-gateway"),
+			WithApplication(env.StringOrDefault(env.GatewayName, "fiber-gateway")),
 	)
 	if err := dc.Connect(); err != nil {
 		logging.GetLogger("main").Warning("eureka client initialization error: %s", err)
+		return nil
 	}
+	logging.GetLogger("main").Info("started eureka registry")
 	return dc
 }
 func createDiscoClient() discovery.Client {
@@ -94,19 +96,25 @@ func createDiscoClient() discovery.Client {
 				env.StringOrDefault(env.DiscoLogin, ""),
 				env.StringOrDefault(env.DiscoPassword, ""),
 			).
-			WithApplication("fiber-gateway"),
+			WithApplication(env.StringOrDefault(env.GatewayName, "fiber-gateway")),
 	)
 	if err := dc.Connect(); err != nil {
 		logging.GetLogger("main").Warning("disco client initialization error: %s", err)
+		return nil
 	}
+	logging.GetLogger("main").Info("started disco registry")
 	return dc
 }
 func createStaticClient() discovery.Client {
 	filePath := env.StringOrDefault(env.StaticRegistryFile, "")
+	if filePath == "" {
+		return nil
+	}
 	v, err := discovery.LoadFromFile(filePath)
 	if err != nil {
 		logging.GetLogger("main").Error("static registry initialization error ('%s'): %s", filePath, err)
 		return nil
 	}
+	logging.GetLogger("main").Info("started static registry")
 	return v
 }

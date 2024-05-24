@@ -10,19 +10,21 @@ x-log-basic: &basic-log
 
 services:
 
-  gateway-fiber:
+  gateway-a:
     deploy:
       resources:
         limits:
           memory: "50M"
     image: mvkvl/api-gateway-fiber:0.0.1
-    container_name: api-gateway-fiber
+    container_name: gateway-a
     environment:
 
+      - "GATEWAY_NAME=GWA"
       - "SERVICE_PORT=3000"
+      - "MONITORING_PORT=3001"
       - "GO_ENV=dev"
 
-      - "EUREKA_URL=http://eureka:8761/eureka"
+#      - "EUREKA_URL=http://eureka:8761/eureka"
       - "EUREKA_LOGIN=eureka"
       - "EUREKA_PASSWORD=eureka"
       - "EUREKA_HEARTBEAT_INTERVAL=5s"
@@ -52,18 +54,66 @@ services:
       - ./routes:/conf
     restart: unless-stopped
     ports:
-      - "3003:3000"
-      - "3004:3001"
+      - "3011:3000"
+      - "3012:3001"
+    <<: *basic-log
+  gateway-b:
+    deploy:
+      resources:
+        limits:
+          memory: "50M"
+    image: mvkvl/api-gateway-fiber:0.0.1
+    container_name: gateway-b
+    environment:
+
+      - "GATEWAY_NAME=GWB"
+      - "SERVICE_PORT=3000"
+      - "MONITORING_PORT=3001"
+      - "GO_ENV=dev"
+
+#      - "EUREKA_URL=http://eureka:8761/eureka"
+      - "EUREKA_LOGIN=eureka"
+      - "EUREKA_PASSWORD=eureka"
+      - "EUREKA_HEARTBEAT_INTERVAL=5s"
+      - "EUREKA_REFRESH_INTERVAL=10s"
+
+      - "DISCO_URL=http://disco:8081"
+      - "DISCO_LOGIN=test"
+      - "DISCO_PASSWORD=test"
+      - "DISCO_HEARTBEAT_INTERVAL=5s"
+      - "DISCO_REFRESH_INTERVAL=10s"
+
+#      - "STATIC_REGISTRY_FILE=/conf/registry.yml"
+
+      - "REGISTRY_REFRESH_INITIAL_DELAY=2s"
+      - "REGISTRY_REFRESH_INTERVAL=10s"
+
+      - "RATE_LIMIT_RPM=150"
+
+      - "LOGGING_LEVEL_ROOT=DEBUG"
+#      - "LOGGING_LEVEL_HEADER_AUTH_PROVIDER=TRACE"
+#      - "LOGGING_LEVEL_EUREKA_CLIENT=TRACE"
+      - "LOGGING_LEVEL_DISCO_CLIENT=TRACE"
+      - "LOGGING_LEVEL_DISCOVERY_REGISTRY=TRACE"
+#      - "LOGGING_LEVEL_SERVICE_RESOLVER=TRACE"
+#      - "LOGGING_LEVEL_FIBER_GATEWAY=TRACE"
+    volumes:
+      - ./routes:/conf
+    restart: unless-stopped
+    ports:
+      - "3021:3000"
+      - "3022:3001"
     <<: *basic-log
 
-  backend:
+  backend-a:
     deploy:
       resources:
         limits:
           memory: "50M"
     image: mvkvl/api-backend:0.0.1
-    container_name: api-backend
+    container_name: backend-a
     environment:
+      - "BASE_PORT=5000"
       - "EUREKA_URL=http://eureka:8761/eureka"
       - "EUREKA_LOGIN=eureka"
       - "EUREKA_PASSWORD=eureka"
@@ -74,13 +124,26 @@ services:
       - "DISCO_PASSWORD=disco"
       - "LOGGING_LEVEL_ROOT=DEBUG"
     restart: unless-stopped
-    ports:
-      - "3101:3101"
-      - "3102:3102"
-      - "3103:3103"
-      - "3201:3201"
-      - "3202:3202"
-      - "3203:3203"
+    <<: *basic-log
+  backend-b:
+    deploy:
+      resources:
+        limits:
+          memory: "50M"
+    image: mvkvl/api-backend:0.0.1
+    container_name: backend-b
+    environment:
+      - "BASE_PORT=6000"
+      - "EUREKA_URL=http://eureka:8761/eureka"
+      - "EUREKA_LOGIN=eureka"
+      - "EUREKA_PASSWORD=eureka"
+      - "EUREKA_HEARTBEAT_INTERVAL=5s"
+      - "EUREKA_REFRESH_INTERVAL=10s"
+      - "DISCO_URL=http://disco:8081"
+      - "DISCO_LOGIN=test"
+      - "DISCO_PASSWORD=test"
+      - "LOGGING_LEVEL_ROOT=DEBUG"
+    restart: unless-stopped
     <<: *basic-log
 
   disco:
@@ -109,45 +172,46 @@ services:
       - "LOGGING_LEVEL_ROOT=DEBUG"
       - "LOGGING_LEVEL=DEBUG"
     restart: unless-stopped
-  eureka:
-    image: mvkvl/eureka-server
-    container_name: eureka-server
-    restart: unless-stopped
-    stop_grace_period: "2s"
-    environment:
-      - "EUREKA_SERVICE_LOGIN=eureka"
-      - "EUREKA_SERVICE_PASSWORD=eureka"
-#      - "ROOT_LOGGING_LEVEL=WARN"
-#      - "CUSTOM_LOGGING_LEVEL=WARN"
-#      - "EUREKA_SERVICE_PORT=8761"
-#      - "EUREKA_SERVICE_HOSTNAME=localhost"
-    ports:
-      - "127.0.0.1:8761:8761"
-    <<: *basic-log
-  gateway-cloud:
-    image: mvkvl/cloud-gateway
-    container_name: cloud-gateway
-    restart: unless-stopped
-    stop_grace_period: "2s"
-    environment:
-      - "SERVER_PORT=8080"
-      - "SERVICE_NAME=cloud-gateway"
-      - "EUREKA_DEFAULT_ZONE=http://eureka:eureka@eureka:8761/eureka"
-    volumes:
-      - ./routes:/conf
-    ports:
-      - "127.0.0.1:9993:8080"
-    <<: *basic-log
-  eureka-client:
-    image: mvkvl/eureka-client
-    container_name: eureka-client
-    restart: unless-stopped
-    stop_grace_period: "2s"
-    environment:
-      - "CLIENT_SERVER_PORT=8080"
-      - "CLIENT_SERVICE_NAME=eureka-client"
-#      - "EUREKA_DEFAULT_ZONE=http://eureka:8761/eureka"
-      - "EUREKA_DEFAULT_ZONE=http://eureka:eureka@eureka:8761/eureka"
-    ports:
-      - "127.0.0.1:9990:8080"
-    <<: *basic-log
+
+#  eureka:
+#    image: mvkvl/eureka-server
+#    container_name: eureka-server
+#    restart: unless-stopped
+#    stop_grace_period: "2s"
+#    environment:
+#      - "EUREKA_SERVICE_LOGIN=eureka"
+#      - "EUREKA_SERVICE_PASSWORD=eureka"
+##      - "ROOT_LOGGING_LEVEL=WARN"
+##      - "CUSTOM_LOGGING_LEVEL=WARN"
+##      - "EUREKA_SERVICE_PORT=8761"
+##      - "EUREKA_SERVICE_HOSTNAME=localhost"
+#    ports:
+#      - "127.0.0.1:8761:8761"
+#    <<: *basic-log
+#  gateway-cloud:
+#    image: mvkvl/cloud-gateway
+#    container_name: cloud-gateway
+#    restart: unless-stopped
+#    stop_grace_period: "2s"
+#    environment:
+#      - "SERVER_PORT=8080"
+#      - "SERVICE_NAME=cloud-gateway"
+#      - "EUREKA_DEFAULT_ZONE=http://eureka:eureka@eureka:8761/eureka"
+#    volumes:
+#      - ./routes:/conf
+#    ports:
+#      - "127.0.0.1:9993:8080"
+#    <<: *basic-log
+#  eureka-client:
+#    image: mvkvl/eureka-client
+#    container_name: eureka-client
+#    restart: unless-stopped
+#    stop_grace_period: "2s"
+#    environment:
+#      - "CLIENT_SERVER_PORT=8080"
+#      - "CLIENT_SERVICE_NAME=eureka-client"
+##      - "EUREKA_DEFAULT_ZONE=http://eureka:8761/eureka"
+#      - "EUREKA_DEFAULT_ZONE=http://eureka:eureka@eureka:8761/eureka"
+#    ports:
+#      - "127.0.0.1:9990:8080"
+#    <<: *basic-log

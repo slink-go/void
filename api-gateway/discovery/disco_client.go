@@ -42,16 +42,18 @@ func (c *discoClient) Connect() error {
 		WithName(c.config.application).
 		WithEndpoints([]string{fmt.Sprintf("%s://%s:%d", "http", c.config.getIP(), c.config.port)})
 	//WithMeta()
-	for {
-		clnt, err := d.NewDiscoHttpClient(cfg)
-		if err != nil {
-			c.logger.Warning("join error: %s", strings.TrimSpace(err.Error()))
-			time.Sleep(5 * time.Second) // TODO: need configurable retry interval
-			continue
+	go func() {
+		for {
+			clnt, err := d.NewDiscoHttpClient(cfg)
+			if err != nil {
+				c.logger.Warning("join error: %s", strings.TrimSpace(err.Error()))
+				time.Sleep(5 * time.Second) // TODO: need configurable retry interval
+				continue
+			}
+			c.client = clnt
+			break
 		}
-		c.client = clnt
-		break
-	}
+	}()
 	return nil
 }
 func (c *discoClient) Services() *Remotes {

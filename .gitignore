@@ -7,3 +7,4 @@ app/run/backend
 app/run/gateway
 .idea/
 *_templ.go
+/app/test/

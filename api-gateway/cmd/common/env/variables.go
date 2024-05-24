@@ -4,6 +4,7 @@ const (
 	GoEnv          = "GO_ENV"
 	ServicePort    = "SERVICE_PORT" // service port ( + port for registration in eureka)
 	MonitoringPort = "MONITORING_PORT"
+	GatewayName    = "GATEWAY_NAME"
 
 	EurekaUrl               = "EUREKA_URL"                //
 	EurekaLogin             = "EUREKA_LOGIN"              //

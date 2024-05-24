@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"github.com/slink-go/api-gateway/cmd/common"
+	"github.com/slink-go/api-gateway/cmd/common/env"
 	"github.com/slink-go/logging"
 	"os"
 	"os/signal"
@@ -9,19 +11,23 @@ import (
 	"time"
 )
 
+func getPort(base, port int) string {
+	return fmt.Sprintf(":%d", base+port)
+}
 func main() {
 
 	common.LoadEnv()
+	basePort := int(env.Int64OrDefault("BASE_PORT", 3000))
 
 	services := []*Service{
-		Create("service-a", "A1", ":3101", "eureka"),
-		Create("service-a", "A2", ":3102", "eureka"),
-		Create("service-b", "B1", ":3201", "eureka"),
-		Create("service-b", "B2", ":3202", "eureka"),
-		Create("service-a", "A3", ":3103", "disco"),
-		Create("service-a", "A4", ":3104", "disco"),
-		Create("service-b", "B3", ":3203", "disco"),
-		Create("service-b", "B4", ":3204", "disco"),
+		Create("service-a", "A1", getPort(basePort, 101), "eureka"),
+		Create("service-a", "A2", getPort(basePort, 102), "eureka"),
+		Create("service-b", "B1", getPort(basePort, 201), "eureka"),
+		Create("service-b", "B2", getPort(basePort, 202), "eureka"),
+		Create("service-a", "A3", getPort(basePort, 103), "disco"),
+		Create("service-a", "A4", getPort(basePort, 104), "disco"),
+		Create("service-b", "B3", getPort(basePort, 203), "disco"),
+		Create("service-b", "B4", getPort(basePort, 204), "disco"),
 	}
 
 	started := 0

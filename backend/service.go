@@ -85,9 +85,10 @@ func (s *Service) testHandler(c *fiber.Ctx) error {
 	s.logger.Info("%s %v '%v'", c.Context().RemoteAddr(), c.GetReqHeaders(), s.queryParams(c))
 	err := c.SendString(
 		fmt.Sprintf(
-			"TEST %s-%s\nHEADERS: %s\nQUERY PARAMS: %s\n",
+			"TEST %s-%s\nBOUND:%s\nHEADERS: %s\nQUERY PARAMS: %s\n",
 			s.applicationId,
 			s.instanceId,
+			s.address,
 			s.getHeaders(c),
 			s.getQueryParams(c),
 		),
