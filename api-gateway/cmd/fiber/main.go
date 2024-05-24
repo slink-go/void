@@ -40,12 +40,11 @@ func main() {
 	dc := createDiscoClient()
 	sc := createStaticClient()
 
-	startGateway("common", sPort, mPort, ec, dc, sc)
-
-	<-make(chan struct{})
+	<-startGateway("common", sPort, mPort, ec, dc, sc)
+	time.Sleep(10 * time.Millisecond)
 }
 
-func startGateway(title, saddr, maddr string, dc ...discovery.Client) {
+func startGateway(title, saddr, maddr string, dc ...discovery.Client) chan struct{} {
 
 	ap := security.NewHttpHeaderAuthProvider()
 	udp := security.NewStubUserDetailsProvider()
@@ -56,15 +55,18 @@ func startGateway(title, saddr, maddr string, dc ...discovery.Client) {
 		WithServiceResolver(resolver.NewServiceResolver(reg)).
 		WithPathProcessor(resolver.NewPathProcessor())
 
+	quitChn := make(chan struct{})
 	go NewFiberBasedGateway().
 		WithAuthProvider(ap).
 		WithUserDetailsProvider(udp).
 		WithRateLimiter(limiter).
 		WithReverseProxy(pr).
 		WithRegistry(reg).
+		WithQuitChn(quitChn).
 		Serve(saddr, maddr)
 
 	//logging.GetLogger("main").Info(fmt.Sprintf("started %s api gateway on %d", title, port))
+	return quitChn
 
 }
 
@@ -79,7 +81,9 @@ func createEurekaClient() discovery.Client {
 			WithRefresh(env.DurationOrDefault(env.EurekaRefreshInterval, time.Second*30)).
 			WithApplication("fiber-gateway"),
 	)
-	dc.Connect()
+	if err := dc.Connect(); err != nil {
+		logging.GetLogger("main").Warning("eureka client initialization error: %s", err)
+	}
 	return dc
 }
 func createDiscoClient() discovery.Client {
@@ -92,7 +96,9 @@ func createDiscoClient() discovery.Client {
 			).
 			WithApplication("fiber-gateway"),
 	)
-	dc.Connect()
+	if err := dc.Connect(); err != nil {
+		logging.GetLogger("main").Warning("disco client initialization error: %s", err)
+	}
 	return dc
 }
 func createStaticClient() discovery.Client {

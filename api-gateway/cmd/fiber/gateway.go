@@ -24,7 +24,10 @@ import (
 	"github.com/slink-go/api-gateway/resolver"
 	"github.com/slink-go/logging"
 	"net/http"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -44,11 +47,20 @@ type FiberBasedGateway struct {
 	registry        registry.ServiceRegistry
 	service         *fiber.App
 	monitoring      *fiber.App
+	quitChn         chan<- struct{}
 }
 
 // region - initializers
 
 func (g *FiberBasedGateway) Serve(addresses ...string) {
+	defer func() {
+		if g.quitChn != nil {
+			g.quitChn <- struct{}{}
+		}
+		if err := recover(); err != nil {
+			g.logger.Warning("server error: ")
+		}
+	}()
 	if addresses == nil || len(addresses) == 0 {
 		panic("service address(es) not set")
 	}
@@ -56,7 +68,7 @@ func (g *FiberBasedGateway) Serve(addresses ...string) {
 		go g.startMonitoring(addresses[1])
 	}
 	if addresses[0] != "" {
-		g.startService(addresses[0])
+		g.startProxyService(addresses[0])
 	} else {
 		panic("service port not set")
 	}
@@ -100,18 +112,27 @@ func (g *FiberBasedGateway) WithRegistry(registry registry.ServiceRegistry) gate
 	g.registry = registry
 	return g
 }
+func (g *FiberBasedGateway) WithQuitChn(chn chan struct{}) gateway.Gateway {
+	g.quitChn = chn
+	return g
+}
 
 // endregion
 // region - monitoring
 
 func (g *FiberBasedGateway) startMonitoring(address string) {
+
 	g.monitoring = fiber.New()
 	g.setupMonitoringMiddleware(address)
 	g.setupMonitoringRouteHandlers()
-	g.logger.Info("start monitoring on %s", address)
+	g.logger.Info("start monitoring service on %s", address)
+
+	go g.handleBreak("monitoring", g.monitoring)
+
 	if err := g.monitoring.Listen(address); err != nil {
 		panic(err)
 	}
+
 }
 
 func (g *FiberBasedGateway) setupMonitoringMiddleware(address string) {
@@ -155,14 +176,18 @@ func (g *FiberBasedGateway) listRemotes(c *fiber.Ctx) error {
 // endregion
 // region - service
 
-func (g *FiberBasedGateway) startService(address string) {
+func (g *FiberBasedGateway) startProxyService(address string) {
+
 	g.service = fiber.New()
 	g.setupMiddleware(address)
 	g.setupRouteHandlers()
-	g.logger.Info("start service on %s", address)
+	g.logger.Info("start proxy service on %s", address)
+
+	go g.handleBreak("proxy", g.service)
 	if err := g.service.Listen(address); err != nil {
 		panic(err)
 	}
+
 }
 
 func (g *FiberBasedGateway) setupMiddleware(address string) {
@@ -304,6 +329,30 @@ func getHeader(ctx *fiber.Ctx, key string) string {
 		return v[0]
 	}
 	return ""
+}
+
+// endregion
+// region - common
+
+func (g *FiberBasedGateway) handleBreak(service string, app *fiber.App) {
+	sigChn := make(chan os.Signal)
+	signal.Notify(sigChn, syscall.SIGTERM, syscall.SIGINT, syscall.SIGKILL)
+	for {
+		switch <-sigChn {
+		case syscall.SIGINT:
+			fallthrough
+		case syscall.SIGKILL:
+			fallthrough
+		case syscall.SIGTERM:
+			g.logger.Info("shutdown %s service", service)
+			app.Shutdown()
+			close(sigChn)
+			if g.quitChn != nil {
+				g.quitChn <- struct{}{}
+			}
+			return
+		}
+	}
 }
 
 // endregion

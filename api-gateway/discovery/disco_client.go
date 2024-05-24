@@ -29,6 +29,9 @@ type discoClient struct {
 }
 
 func (c *discoClient) Connect() error {
+	if c.config.url == "" {
+		return fmt.Errorf("disco url is empty")
+	}
 	cfg := d.
 		EmptyConfig().
 		WithDisco([]string{c.config.url}).
