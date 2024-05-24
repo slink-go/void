@@ -84,7 +84,7 @@ func (pp *pathProcessor) UrlResolve(input string, resolver ServiceResolver) (str
 		return "", err
 	}
 
-	return fmt.Sprintf("http://%s", url), nil
+	return url, nil
 }
 
 func (pp *pathProcessor) partsIsEmpty(parts []string) bool {

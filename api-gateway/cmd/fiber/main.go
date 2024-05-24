@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"github.com/slink-go/api-gateway/cmd/common"
 	"github.com/slink-go/api-gateway/cmd/common/env"
-	"github.com/slink-go/api-gateway/discovery/disco"
-	"github.com/slink-go/api-gateway/discovery/eureka"
+	"github.com/slink-go/api-gateway/discovery"
 	"github.com/slink-go/api-gateway/middleware/rate"
 	"github.com/slink-go/api-gateway/middleware/security"
 	"github.com/slink-go/api-gateway/proxy"
@@ -27,90 +26,95 @@ func main() {
 
 	common.LoadEnv()
 
-	port := int(env.Int64OrDefault(env.ServicePort, 0))
-
-	if port > 0 {
-		startEurekaGateway(port)
-		startDiscoGateway(port + 1)
-	} else {
-		panic("service port not set")
+	var sPort string
+	if svcPort := int(env.Int64OrDefault(env.ServicePort, 0)); svcPort > 0 {
+		sPort = fmt.Sprintf(":%d", svcPort)
 	}
 
-	<-make(chan struct{})
+	var mPort string
+	if monPort := int(env.Int64OrDefault(env.MonitoringPort, 0)); monPort > 0 {
+		mPort = fmt.Sprintf(":%d", monPort)
+	}
+
+	ec := createEurekaClient()
+	dc := createDiscoClient()
+	sc := createStaticClient()
+
+	<-startGateway("common", sPort, mPort, ec, dc, sc)
+	time.Sleep(10 * time.Millisecond)
 }
 
-func startEurekaGateway(port int) {
+func startGateway(title, saddr, maddr string, dc ...discovery.Client) chan struct{} {
 
 	ap := security.NewHttpHeaderAuthProvider()
 	udp := security.NewStubUserDetailsProvider()
 	limiter := rate.NewLimiter(int(env.Int64OrDefault(env.RateLimitRPM, 0)))
-	reg := createEurekaRegistry()
+	reg := registry.NewServiceRegistry(dc...)
 
 	pr := proxy.CreateReverseProxy().
 		WithServiceResolver(resolver.NewServiceResolver(reg)).
 		WithPathProcessor(resolver.NewPathProcessor())
 
+	quitChn := make(chan struct{})
 	go NewFiberBasedGateway().
 		WithAuthProvider(ap).
 		WithUserDetailsProvider(udp).
 		WithRateLimiter(limiter).
 		WithReverseProxy(pr).
 		WithRegistry(reg).
-		Serve(fmt.Sprintf(":%d", port))
+		WithQuitChn(quitChn).
+		Serve(saddr, maddr)
 
-	logging.GetLogger("main").Info(fmt.Sprintf("started eureka-based api gateway on :%d", port))
-
-}
-func startDiscoGateway(port int) {
-
-	ap := security.NewHttpHeaderAuthProvider()
-	udp := security.NewStubUserDetailsProvider()
-	limiter := rate.NewLimiter(int(env.Int64OrDefault(env.RateLimitRPM, 0)))
-	reg := createDiscoRegistry()
-
-	pr := proxy.CreateReverseProxy().
-		WithServiceResolver(resolver.NewServiceResolver(reg)).
-		WithPathProcessor(resolver.NewPathProcessor())
-
-	go NewFiberBasedGateway().
-		WithAuthProvider(ap).
-		WithUserDetailsProvider(udp).
-		WithRateLimiter(limiter).
-		WithReverseProxy(pr).
-		WithRegistry(reg).
-		Serve(fmt.Sprintf(":%d", port))
-
-	logging.GetLogger("main").Info(fmt.Sprintf("started disco-based api gateway on :%d", port))
+	//logging.GetLogger("main").Info(fmt.Sprintf("started %s api gateway on %d", title, port))
+	return quitChn
 
 }
 
-func createStaticRegistry() registry.ServiceRegistry {
-	return registry.NewStaticRegistry(common.Services())
+func createEurekaClient() discovery.Client {
+	dc := discovery.NewEurekaClient(
+		discovery.NewEurekaClientConfig().
+			WithUrl(env.StringOrDefault(env.EurekaUrl, "")).
+			WithAuth(
+				env.StringOrDefault(env.EurekaLogin, ""),
+				env.StringOrDefault(env.EurekaPassword, ""),
+			).
+			WithRefresh(env.DurationOrDefault(env.EurekaRefreshInterval, time.Second*30)).
+			WithApplication(env.StringOrDefault(env.GatewayName, "fiber-gateway")),
+	)
+	if err := dc.Connect(); err != nil {
+		logging.GetLogger("main").Warning("eureka client initialization error: %s", err)
+		return nil
+	}
+	logging.GetLogger("main").Info("started eureka registry")
+	return dc
 }
-func createEurekaRegistry() registry.ServiceRegistry {
-	eurekaClientConfig := eureka.Config{}
-	eurekaClientConfig.
-		WithUrl(env.StringOrDefault(env.EurekaUrl, "")).
-		WithAuth(
-			env.StringOrDefault(env.EurekaLogin, ""),
-			env.StringOrDefault(env.EurekaPassword, ""),
-		).
-		WithRefresh(env.DurationOrDefault(env.EurekaRefreshInterval, time.Second*30)).
-		WithApplication("fiber-gateway")
-	dc := eureka.NewEurekaClient(&eurekaClientConfig) // eureka discovery client
-	dc.Connect()
-	return registry.NewDiscoveryRegistry(dc)
+func createDiscoClient() discovery.Client {
+	dc := discovery.NewDiscoClient(
+		discovery.NewDiscoClientConfig().
+			WithUrl(env.StringOrDefault(env.DiscoUrl, "")).
+			WithBasicAuth(
+				env.StringOrDefault(env.DiscoLogin, ""),
+				env.StringOrDefault(env.DiscoPassword, ""),
+			).
+			WithApplication(env.StringOrDefault(env.GatewayName, "fiber-gateway")),
+	)
+	if err := dc.Connect(); err != nil {
+		logging.GetLogger("main").Warning("disco client initialization error: %s", err)
+		return nil
+	}
+	logging.GetLogger("main").Info("started disco registry")
+	return dc
 }
-func createDiscoRegistry() registry.ServiceRegistry {
-	discoClientConfig := disco.Config{}
-	discoClientConfig.
-		WithUrl(env.StringOrDefault(env.DiscoUrl, "")).
-		WithBasicAuth(
-			env.StringOrDefault(env.DiscoLogin, ""),
-			env.StringOrDefault(env.DiscoPassword, ""),
-		).
-		WithApplication("fiber-gateway")
-	dc := disco.NewDiscoClient(&discoClientConfig) // disco discovery client
-	dc.Connect()
-	return registry.NewDiscoveryRegistry(dc)
+func createStaticClient() discovery.Client {
+	filePath := env.StringOrDefault(env.StaticRegistryFile, "")
+	if filePath == "" {
+		return nil
+	}
+	v, err := discovery.LoadFromFile(filePath)
+	if err != nil {
+		logging.GetLogger("main").Error("static registry initialization error ('%s'): %s", filePath, err)
+		return nil
+	}
+	logging.GetLogger("main").Info("started static registry")
+	return v
 }

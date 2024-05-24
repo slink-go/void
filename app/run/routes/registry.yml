@@ -1,0 +1,13 @@
+#
+# static-registry config
+#
+- name: service-a
+  instances:
+    - http://backend:3101
+    - http://backend:3102
+    - http://backend:3103
+- name: service-b
+  instances:
+    - http://backend:3201
+    - http://backend:3202
+    - http://backend:3203

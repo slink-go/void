@@ -2,7 +2,12 @@ package resolver
 
 import (
 	"errors"
+	"github.com/slink-go/api-gateway/cmd/common/env"
+	"github.com/slink-go/api-gateway/discovery"
+	"github.com/slink-go/api-gateway/registry"
+	"os"
 	"testing"
+	"time"
 )
 
 func TestPartsIsEmpty(t *testing.T) {
@@ -219,7 +224,7 @@ func TestPathResolve(t *testing.T) {
 			"invalid input test 3",
 			"/api/service-c/test",
 			"",
-			NewErrServiceUnavailable(""),
+			registry.NewErrServiceUnavailable(""),
 		},
 		{
 			"valid input test 1",
@@ -247,12 +252,33 @@ func TestPathResolve(t *testing.T) {
 		},
 	}
 
-	var mappings = make(map[string][]string)
-	mappings["a"] = []string{"service-a"}
-	mappings["b"] = []string{"service-b"}
+	var mappings = make(map[string][]discovery.Remote)
+	mappings["A"] = []discovery.Remote{
+		{
+			App:    "A",
+			Scheme: "http",
+			Host:   "service-a",
+			Port:   80,
+			Status: "UP",
+		},
+	}
+	mappings["B"] = []discovery.Remote{
+		{
+			App:    "B",
+			Scheme: "http",
+			Host:   "service-b",
+			Port:   80,
+			Status: "UP",
+		},
+	}
 	pp := &pathProcessor{}
+	reg := registry.NewServiceRegistry(discovery.NewStaticClient(mappings))
+	// --- чтобы refresh успел случиться -------------------
+	os.Setenv(env.RegistryRefreshInitialDelay, "0ms")
+	time.Sleep(time.Millisecond * 10)
+	// -----------------------------------------------------
 	for _, tt := range tests {
-		testPathResolve(t, pp, NewServiceResolver(NewStaticServiceRegistry(mappings)), tt.name, tt.input, tt.expectedResult, tt.expectedError)
+		testPathResolve(t, pp, NewServiceResolver(reg), tt.name, tt.input, tt.expectedResult, tt.expectedError)
 	}
 }
 func testPathResolve(t *testing.T, pp PathProcessor, resolver ServiceResolver, test string, input string, expectedResult string, expectedError error) {

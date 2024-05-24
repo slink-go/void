@@ -1,8 +1,10 @@
 package env
 
 const (
-	GoEnv       = "GO_ENV"
-	ServicePort = "SERVICE_PORT" // service port ( + port for registration in eureka)
+	GoEnv          = "GO_ENV"
+	ServicePort    = "SERVICE_PORT" // service port ( + port for registration in eureka)
+	MonitoringPort = "MONITORING_PORT"
+	GatewayName    = "GATEWAY_NAME"
 
 	EurekaUrl               = "EUREKA_URL"                //
 	EurekaLogin             = "EUREKA_LOGIN"              //
@@ -14,7 +16,9 @@ const (
 	DiscoLogin    = "DISCO_LOGIN"
 	DiscoPassword = "DISCO_PASSWORD"
 
-	RegistryRefreshInterval = "REGISTRY_REFRESH_INTERVAL" // default 60s
-	RateLimitRPM            = "RATE_LIMIT_RPM"            // rate limit "requests per minute" (for fiber limiter)
-	RateLimitRPS            = "RATE_LIMIT_RPS"            // rate limit "requests per second" (for gin limiter)
+	StaticRegistryFile = "STATIC_REGISTRY_FILE"
+
+	RegistryRefreshInitialDelay = "REGISTRY_REFRESH_INITIAL_DELAY"
+	RegistryRefreshInterval     = "REGISTRY_REFRESH_INTERVAL" // default 60s
+	RateLimitRPM                = "RATE_LIMIT_RPM"            // rate limit "requests per minute" (for fiber limiter)
 )

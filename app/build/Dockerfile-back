@@ -11,5 +11,6 @@ RUN upx --best -o /backend-packed  /backend
 FROM scratch
 
 COPY --from=build   /backend-packed   /backend
+#COPY --from=build   /backend   /backend
 
 CMD ["/backend"]

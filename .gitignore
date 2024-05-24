@@ -3,3 +3,8 @@ proxy-gin
 .env
 /api-gateway/cmd/backend
 go.sum
+app/run/backend
+app/run/gateway
+.idea/
+*_templ.go
+/app/test/

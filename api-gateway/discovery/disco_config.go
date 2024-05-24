@@ -1,14 +1,14 @@
-package disco
+package discovery
 
 import (
 	"github.com/slink-go/api-gateway/cmd/common/env"
-	"github.com/slink-go/api-gateway/cmd/common/util"
+	"github.com/slink-go/api-gateway/discovery/util"
 	"github.com/slink-go/logging"
 	"os"
 	"time"
 )
 
-type Config struct {
+type discoConfig struct {
 	url           string // disco server url
 	login         string // [optional] eureka server access login
 	password      string // [optional] eureka server access password
@@ -21,56 +21,56 @@ type Config struct {
 	timeout       time.Duration
 }
 
-func NewConfig() *Config {
-	return &Config{
+func NewDiscoClientConfig() *discoConfig {
+	return &discoConfig{
 		application: "UNKNOWN",
 		hostname:    "",
 		port:        int(env.Int64OrDefault(env.ServicePort, 0)),
 	}
 }
 
-func (c *Config) WithUrl(url string) *Config {
+func (c *discoConfig) WithUrl(url string) *discoConfig {
 	c.url = url
 	return c
 }
-func (c *Config) WithBasicAuth(username, password string) *Config {
+func (c *discoConfig) WithBasicAuth(username, password string) *discoConfig {
 	c.login = username
 	c.password = password
 	return c
 }
-func (c *Config) WithApplication(application string) *Config {
+func (c *discoConfig) WithApplication(application string) *discoConfig {
 	c.application = application
 	return c
 }
-func (c *Config) WithPort(port int) *Config {
+func (c *discoConfig) WithPort(port int) *discoConfig {
 	c.port = port
 	return c
 }
-func (c *Config) WithIp(ip string) *Config {
+func (c *discoConfig) WithIp(ip string) *discoConfig {
 	c.ip = ip
 	return c
 }
-func (c *Config) WithHostname(name string) *Config {
+func (c *discoConfig) WithHostname(name string) *discoConfig {
 	c.hostname = name
 	return c
 }
-func (c *Config) WithRetry(attempts uint, delay time.Duration) *Config {
+func (c *discoConfig) WithRetry(attempts uint, delay time.Duration) *discoConfig {
 	c.retryAttempts = attempts
 	c.retryDelay = delay
 	return c
 }
-func (c *Config) WithTimeout(timeout time.Duration) *Config {
+func (c *discoConfig) WithTimeout(timeout time.Duration) *discoConfig {
 	c.timeout = timeout
 	return c
 }
 
-func (c *Config) getIP() string {
+func (c *discoConfig) getIP() string {
 	if c.ip != "" {
 		return c.ip
 	}
 	return util.GetLocalIP()
 }
-func (c *Config) getHostname() string {
+func (c *discoConfig) getHostname() string {
 	if c.hostname == "" {
 		v, err := os.Hostname()
 		if err != nil {

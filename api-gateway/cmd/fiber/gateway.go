@@ -10,9 +10,11 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/monitor"
+	"github.com/gofiber/fiber/v2/middleware/pprof"
 	p "github.com/gofiber/fiber/v2/middleware/proxy"
 	"github.com/gofiber/fiber/v2/utils"
 	"github.com/palantir/stacktrace"
+	"github.com/slink-go/api-gateway/cmd/fiber/templates"
 	"github.com/slink-go/api-gateway/gateway"
 	"github.com/slink-go/api-gateway/middleware/context"
 	"github.com/slink-go/api-gateway/middleware/rate"
@@ -22,16 +24,19 @@ import (
 	"github.com/slink-go/api-gateway/resolver"
 	"github.com/slink-go/logging"
 	"net/http"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 )
 
 func NewFiberBasedGateway() gateway.Gateway {
-	gateway := FiberBasedGateway{
+	gw := FiberBasedGateway{
 		logger:          logging.GetLogger("fiber-gateway"),
 		contextProvider: context.CreateContextProvider(),
 	}
-	return &gateway
+	return &gw
 }
 
 type FiberBasedGateway struct {
@@ -39,15 +44,34 @@ type FiberBasedGateway struct {
 	contextProvider context.Provider
 	reverseProxy    *proxy.ReverseProxy
 	limiter         fiber.Handler
-	engine          *fiber.App
 	registry        registry.ServiceRegistry
+	service         *fiber.App
+	monitoring      *fiber.App
+	quitChn         chan<- struct{}
 }
 
-func (g *FiberBasedGateway) Serve(address string) {
-	g.engine = fiber.New()
-	g.setupMiddleware(address)
-	g.setupRouteHandlers()
-	g.engine.Listen(address)
+// region - initializers
+
+func (g *FiberBasedGateway) Serve(addresses ...string) {
+	defer func() {
+		if g.quitChn != nil {
+			g.quitChn <- struct{}{}
+		}
+		if err := recover(); err != nil {
+			g.logger.Warning("server error: ")
+		}
+	}()
+	if addresses == nil || len(addresses) == 0 {
+		panic("service address(es) not set")
+	}
+	if len(addresses) > 1 && addresses[1] != "" {
+		go g.startMonitoring(addresses[1])
+	}
+	if addresses[0] != "" {
+		g.startProxyService(addresses[0])
+	} else {
+		panic("service port not set")
+	}
 }
 
 func (g *FiberBasedGateway) WithAuthProvider(ap security.AuthProvider) gateway.Gateway {
@@ -88,55 +112,48 @@ func (g *FiberBasedGateway) WithRegistry(registry registry.ServiceRegistry) gate
 	g.registry = registry
 	return g
 }
-
-func (g *FiberBasedGateway) setupMiddleware(address string) {
-
-	p := fiberprometheus.New(fmt.Sprintf("fiber-api-gateway:%s", address))
-	p.RegisterAt(g.engine, "/prometheus")
-	//prometheus.SetSkipPaths([]string{"/ping"})
-	g.engine.Use(p.Middleware)
-
-	// logger | должен быть первым, чтобы фиксировать отлупы от другого middleware и latency запросов
-	// кстати о latency - нужна metricMiddleware
-	g.engine.Use(logger.New())
-	//g.engine.Use(g.customLoggingMiddleware)
-
-	// rate limiter
-	if g.limiter != nil {
-		g.engine.Use(g.limiter)
-	}
-
-	// helmet (security)
-	g.engine.Use(helmet.New())
-
-	// csrf
-	csrfConfig := csrf.Config{
-		KeyLookup:      "header:X-Csrf-Token", // string in the form of '<source>:<key>' that is used to extract token from the request
-		CookieName:     "my_csrf_",            // name of the session cookie
-		CookieSameSite: "Strict",              // indicates if CSRF cookie is requested by SameSite
-		Expiration:     3 * time.Hour,         // expiration is the duration before CSRF token will expire
-		KeyGenerator:   utils.UUID,            // creates a new CSRF token
-	}
-	g.engine.Use(csrf.New(csrfConfig))
-
-	// target resolver
-	g.engine.Use(g.proxyTargetResolver)
-
-	// context provider
-	g.engine.Use(g.contextMiddleware)
-
-}
-func (g *FiberBasedGateway) setupRouteHandlers() {
-	g.engine.Get("/list", g.listRemotes)
-	g.engine.Get("/monitor", monitor.New(monitor.Config{Title: "VOID API Gateway Monitor"}))
-	g.engine.Get("*", g.proxyHandler)
-	g.engine.Post("*", g.proxyHandler)
-	g.engine.Put("*", g.proxyHandler)
-	g.engine.Delete("*", g.proxyHandler)
-	g.engine.Head("*", g.proxyHandler)
-	g.engine.Options("*", g.proxyHandler)
+func (g *FiberBasedGateway) WithQuitChn(chn chan struct{}) gateway.Gateway {
+	g.quitChn = chn
+	return g
 }
 
+// endregion
+// region - monitoring
+
+func (g *FiberBasedGateway) startMonitoring(address string) {
+
+	g.monitoring = fiber.New()
+	g.setupMonitoringMiddleware(address)
+	g.setupMonitoringRouteHandlers()
+	g.logger.Info("start monitoring service on %s", address)
+
+	go g.handleBreak("monitoring", g.monitoring)
+
+	if err := g.monitoring.Listen(address); err != nil {
+		panic(err)
+	}
+
+}
+
+func (g *FiberBasedGateway) setupMonitoringMiddleware(address string) {
+	p := fiberprometheus.New(fmt.Sprintf("fiber-api-gateway-monitor:%s", address))
+	p.RegisterAt(g.monitoring, "/prometheus")
+	g.monitoring.Use(p.Middleware)
+	g.monitoring.Use(logger.New())
+}
+
+func (g *FiberBasedGateway) setupMonitoringRouteHandlers() {
+	g.monitoring.Get("/", g.monitoringPage)
+	g.monitoring.Static("/s", "./static")
+	g.monitoring.Get("/list", g.listRemotes)
+	g.monitoring.Get("/monitor", monitor.New(monitor.Config{Title: "VOID API Gateway (monitoring)"}))
+}
+func (g *FiberBasedGateway) monitoringPage(c *fiber.Ctx) error {
+	c.Set("Content-Type", "text/html")
+	t := templates.ServicesPage(templates.Cards(g.registry.List()))
+	err := t.Render(c.Context(), c.Response().BodyWriter())
+	return err
+}
 func (g *FiberBasedGateway) listRemotes(c *fiber.Ctx) error {
 	if g.registry != nil {
 		data := g.registry.List()
@@ -155,7 +172,86 @@ func (g *FiberBasedGateway) listRemotes(c *fiber.Ctx) error {
 	}
 	return nil
 }
+
+// endregion
+// region - service
+
+func (g *FiberBasedGateway) startProxyService(address string) {
+
+	g.service = fiber.New()
+	g.setupMiddleware(address)
+	g.setupRouteHandlers()
+	g.logger.Info("start proxy service on %s", address)
+
+	go g.handleBreak("proxy", g.service)
+	if err := g.service.Listen(address); err != nil {
+		panic(err)
+	}
+
+}
+
+func (g *FiberBasedGateway) setupMiddleware(address string) {
+
+	g.service.Use(pprof.New())
+
+	p := fiberprometheus.New(fmt.Sprintf("fiber-api-gateway:%s", address))
+	p.RegisterAt(g.service, "/prometheus")
+	//prometheus.SetSkipPaths([]string{"/ping"})
+	g.service.Use(p.Middleware)
+
+	// logger | должен быть первым, чтобы фиксировать отлупы от другого middleware и latency запросов
+	// кстати о latency - нужна metricMiddleware
+	g.service.Use(logger.New())
+	//g.engine.Use(g.customLoggingMiddleware)
+
+	// rate limiter
+	if g.limiter != nil {
+		g.service.Use(g.limiter)
+	}
+
+	// helmet (security)
+	g.service.Use(helmet.New())
+
+	// csrf
+	csrfConfig := csrf.Config{
+		KeyLookup:      "header:X-Csrf-Token", // string in the form of '<source>:<key>' that is used to extract token from the request
+		CookieName:     "my_csrf_",            // name of the session cookie
+		CookieSameSite: "Strict",              // indicates if CSRF cookie is requested by SameSite
+		Expiration:     3 * time.Hour,         // expiration is the duration before CSRF token will expire
+		KeyGenerator:   utils.UUID,            // creates a new CSRF token
+	}
+	g.service.Use(csrf.New(csrfConfig))
+
+	// target resolver
+	g.service.Use(g.proxyTargetResolver)
+
+	// context provider
+	g.service.Use(g.contextMiddleware)
+
+}
 func (g *FiberBasedGateway) customLoggingMiddleware(ctx *fiber.Ctx) error {
+	return ctx.Next()
+}
+func (g *FiberBasedGateway) proxyTargetResolver(ctx *fiber.Ctx) error {
+	target, err := g.reverseProxy.ResolveTarget(ctx.Path())
+	if err != nil {
+		g.logger.Trace("%s", stacktrace.RootCause(err))
+		// - если смогли нужный найти сервис в реестре, устанавливаем соответствующий
+		// заголовок; иначе просто продолжаем выполнение (пробуем локальный обработчик
+		// вместо прокси)
+		// - для полноты картины выставляем ошибку в контексте
+		switch err.(type) {
+		case *resolver.ErrEmptyBaseUrl:
+			ctx.Request().Header.Set(context.CtxError, err.Error())
+		case *resolver.ErrInvalidPath:
+			ctx.Request().Header.Set(context.CtxError, err.Error())
+		case *registry.ErrServiceUnavailable:
+			ctx.Request().Header.Set(context.CtxError, err.Error())
+		}
+	} else {
+		g.logger.Trace("resolved url: %s%s -> %s", ctx.BaseURL(), ctx.OriginalURL(), target)
+		ctx.Request().Header.Set(context.CtxProxyTarget, target.String())
+	}
 	return ctx.Next()
 }
 func (g *FiberBasedGateway) contextMiddleware(ctx *fiber.Ctx) error {
@@ -186,29 +282,15 @@ func (g *FiberBasedGateway) contextMiddleware(ctx *fiber.Ctx) error {
 	return ctx.Next()
 }
 
-func (g *FiberBasedGateway) proxyTargetResolver(ctx *fiber.Ctx) error {
-	target, err := g.reverseProxy.ResolveTarget(ctx.Path())
-	if err != nil {
-		g.logger.Trace("%s", stacktrace.RootCause(err))
-		// - если смогли нужный найти сервис в реестре, устанавливаем соответствующий
-		// заголовок; иначе просто продолжаем выполнение (пробуем локальный обработчик
-		// вместо прокси)
-		// - для полноты картины выставляем ошибку в контексте
-		switch err.(type) {
-		case *resolver.ErrEmptyBaseUrl:
-			ctx.Request().Header.Set(context.CtxError, err.Error())
-		case *resolver.ErrInvalidPath:
-			ctx.Request().Header.Set(context.CtxError, err.Error())
-		case *registry.ErrServiceUnavailable:
-			ctx.Request().Header.Set(context.CtxError, err.Error())
-		}
-	} else {
-		g.logger.Trace("resolved url: %s%s -> %s", ctx.BaseURL(), ctx.OriginalURL(), target)
-		ctx.Request().Header.Set(context.CtxProxyTarget, target.String())
-	}
-	return ctx.Next()
+func (g *FiberBasedGateway) setupRouteHandlers() {
+	g.service.Get("/monitor", monitor.New(monitor.Config{Title: "VOID API Gateway (service)"}))
+	g.service.Get("*", g.proxyHandler)
+	g.service.Post("*", g.proxyHandler)
+	g.service.Put("*", g.proxyHandler)
+	g.service.Delete("*", g.proxyHandler)
+	g.service.Head("*", g.proxyHandler)
+	g.service.Options("*", g.proxyHandler)
 }
-
 func (g *FiberBasedGateway) proxyHandler(ctx *fiber.Ctx) error {
 
 	defer func() {
@@ -232,7 +314,6 @@ func (g *FiberBasedGateway) proxyHandler(ctx *fiber.Ctx) error {
 	// TODO: сделать обработку ответов !!! (а то сильно прозрачно получается)
 	return p.Do(ctx, proxyTarget)
 }
-
 func (g *FiberBasedGateway) getQueryParams(ctx *fiber.Ctx) string {
 	result := ""
 	for p, v := range ctx.Queries() {
@@ -243,10 +324,35 @@ func (g *FiberBasedGateway) getQueryParams(ctx *fiber.Ctx) string {
 	}
 	return "?" + strings.TrimSuffix(result, "&")
 }
-
 func getHeader(ctx *fiber.Ctx, key string) string {
 	if v, ok := ctx.GetReqHeaders()[key]; ok {
 		return v[0]
 	}
 	return ""
 }
+
+// endregion
+// region - common
+
+func (g *FiberBasedGateway) handleBreak(service string, app *fiber.App) {
+	sigChn := make(chan os.Signal)
+	signal.Notify(sigChn, syscall.SIGTERM, syscall.SIGINT, syscall.SIGKILL)
+	for {
+		switch <-sigChn {
+		case syscall.SIGINT:
+			fallthrough
+		case syscall.SIGKILL:
+			fallthrough
+		case syscall.SIGTERM:
+			g.logger.Info("shutdown %s service", service)
+			app.Shutdown()
+			close(sigChn)
+			if g.quitChn != nil {
+				g.quitChn <- struct{}{}
+			}
+			return
+		}
+	}
+}
+
+// endregion

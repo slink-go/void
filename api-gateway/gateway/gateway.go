@@ -13,5 +13,6 @@ type Gateway interface {
 	WithRateLimiter(limiter rate.Limiter) Gateway
 	WithReverseProxy(reverseProxy *proxy.ReverseProxy) Gateway
 	WithRegistry(registry registry.ServiceRegistry) Gateway
-	Serve(address string)
+	WithQuitChn(chn chan struct{}) Gateway
+	Serve(addresses ...string)
 }
