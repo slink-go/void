@@ -31,6 +31,15 @@ import (
 	"time"
 )
 
+// see also:
+// https://stackoverflow.com/questions/76501736/how-to-prevent-fiber-from-auto-registerting-head-routes
+// https://github.com/renanbastos93/fastpath?tab=readme-ov-file
+// https://medium.com/@bijit211987/everything-you-need-to-know-about-rate-limiting-for-apis-f236d2adcfff
+// https://docs.spring.io/spring-cloud/docs/current/reference/html/configprops.html
+// PROFILING https://habr.com/ru/companies/badoo/articles/324682/
+// !!! https://dev.to/koddr/go-fiber-by-examples-working-with-middlewares-and-boilerplates-3p0m#helmet-middleware
+// !!! Create Go App https://github.com/create-go-app
+
 func NewFiberBasedGateway() gateway.Gateway {
 	gw := FiberBasedGateway{
 		logger:          logging.GetLogger("fiber-gateway"),
