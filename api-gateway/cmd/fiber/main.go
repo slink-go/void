@@ -26,22 +26,26 @@ func main() {
 
 	common.LoadEnv()
 
-	port := int(env.Int64OrDefault(env.ServicePort, 0))
+	var sPort string
+	if svcPort := int(env.Int64OrDefault(env.ServicePort, 0)); svcPort > 0 {
+		sPort = fmt.Sprintf(":%d", svcPort)
+	}
+
+	var mPort string
+	if monPort := int(env.Int64OrDefault(env.MonitoringPort, 0)); monPort > 0 {
+		mPort = fmt.Sprintf(":%d", monPort)
+	}
 
 	ec := createEurekaClient()
 	dc := createDiscoClient()
 	sc := createStaticClient()
 
-	if port > 0 {
-		startGateway("common", port, ec, dc, sc)
-	} else {
-		panic("service port not set")
-	}
+	startGateway("common", sPort, mPort, ec, dc, sc)
 
 	<-make(chan struct{})
 }
 
-func startGateway(title string, port int, dc ...discovery.Client) {
+func startGateway(title, saddr, maddr string, dc ...discovery.Client) {
 
 	ap := security.NewHttpHeaderAuthProvider()
 	udp := security.NewStubUserDetailsProvider()
@@ -58,9 +62,9 @@ func startGateway(title string, port int, dc ...discovery.Client) {
 		WithRateLimiter(limiter).
 		WithReverseProxy(pr).
 		WithRegistry(reg).
-		Serve(fmt.Sprintf(":%d", port))
+		Serve(saddr, maddr)
 
-	logging.GetLogger("main").Info(fmt.Sprintf("started %s api gateway on :%d", title, port))
+	//logging.GetLogger("main").Info(fmt.Sprintf("started %s api gateway on %d", title, port))
 
 }
 

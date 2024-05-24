@@ -13,5 +13,5 @@ type Gateway interface {
 	WithRateLimiter(limiter rate.Limiter) Gateway
 	WithReverseProxy(reverseProxy *proxy.ReverseProxy) Gateway
 	WithRegistry(registry registry.ServiceRegistry) Gateway
-	Serve(address string)
+	Serve(addresses ...string)
 }

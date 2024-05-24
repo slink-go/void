@@ -1,8 +1,9 @@
 package env
 
 const (
-	GoEnv       = "GO_ENV"
-	ServicePort = "SERVICE_PORT" // service port ( + port for registration in eureka)
+	GoEnv          = "GO_ENV"
+	ServicePort    = "SERVICE_PORT" // service port ( + port for registration in eureka)
+	MonitoringPort = "MONITORING_PORT"
 
 	EurekaUrl               = "EUREKA_URL"                //
 	EurekaLogin             = "EUREKA_LOGIN"              //
