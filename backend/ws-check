@@ -1,0 +1,12 @@
+#curl --include \
+#     --no-buffer \
+#     --header "Connection: Upgrade" \
+#     --header "Upgrade: websocket" \
+#     --header "Host: example.com:80" \
+#     --header "Origin: http://example.com:80" \
+#     --header "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==" \
+#     --header "Sec-WebSocket-Protocol: cr" \
+#     --header "Sec-WebSocket-Version: 13" \
+#     "http://localhost:3103/api/ws"
+
+websocat ws://localhost:3103/api/ws

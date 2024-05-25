@@ -183,7 +183,7 @@ func (g *FiberBasedGateway) listRemotes(c *fiber.Ctx) error {
 }
 
 // endregion
-// region - service
+// region - proxy
 
 func (g *FiberBasedGateway) startProxyService(address string) {
 
@@ -320,6 +320,11 @@ func (g *FiberBasedGateway) proxyHandler(ctx *fiber.Ctx) error {
 	proxyTarget := fmt.Sprintf("%s%s", target, g.getQueryParams(ctx))
 	g.logger.Trace("proxying %s", proxyTarget)
 
+	//fiber.AcquireAgent().Request().
+	//ctx.Set("X-Forwarded-For", ctx.Context().RemoteAddr().String())
+	//ctx.Set("X-Real-Ip", ctx.Context().RemoteAddr().String())
+	//g.logger.Warning("remote IP: %s", ctx.Context().RemoteAddr())
+
 	// TODO: сделать обработку ответов !!! (а то сильно прозрачно получается)
 	return p.Do(ctx, proxyTarget)
 }
@@ -331,7 +336,11 @@ func (g *FiberBasedGateway) getQueryParams(ctx *fiber.Ctx) string {
 		result = result + v
 		result = result + "&"
 	}
-	return "?" + strings.TrimSuffix(result, "&")
+	if result != "" {
+		return "?" + strings.TrimSuffix(result, "&")
+	} else {
+		return ""
+	}
 }
 func getHeader(ctx *fiber.Ctx, key string) string {
 	if v, ok := ctx.GetReqHeaders()[key]; ok {

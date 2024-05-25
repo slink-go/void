@@ -168,7 +168,7 @@ services:
       - "DISCO_CLIENT_FAILING_THRESHOLD=3"
       - "DISCO_CLIENT_DOWN_THRESHOLD=4"
       - "DISCO_CLIENT_REMOVE_THRESHOLD=5"
-      - "DISCO_USERS=disco:disco,test:test"
+      - "DISCO_USERS=disco:disco,test:test,dev:dev"
       - "LOGGING_LEVEL_ROOT=DEBUG"
       - "LOGGING_LEVEL=DEBUG"
     restart: unless-stopped

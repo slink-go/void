@@ -25,37 +25,37 @@ func (r Remote) String() string {
 }
 
 type Remotes struct {
-	data map[string][]Remote
+	Data map[string][]Remote `json:"remotes,omitempty"`
 }
 
 func (r *Remotes) All() map[string][]Remote {
-	return r.data
+	return r.Data
 }
 func (r *Remotes) Add(app string, remote Remote) {
-	if r.data == nil {
-		r.data = make(map[string][]Remote)
+	if r.Data == nil {
+		r.Data = make(map[string][]Remote)
 	}
-	if _, ok := r.data[app]; !ok {
-		r.data[app] = make([]Remote, 0)
+	if _, ok := r.Data[app]; !ok {
+		r.Data[app] = make([]Remote, 0)
 	}
-	r.data[app] = append(r.data[app], remote)
+	r.Data[app] = append(r.Data[app], remote)
 }
 func (r *Remotes) Get(app string) []Remote {
-	if r.data == nil {
+	if r.Data == nil {
 		return []Remote{}
 	}
-	v, ok := r.data[app]
+	v, ok := r.Data[app]
 	if !ok {
 		return []Remote{}
 	}
 	return v
 }
 func (r *Remotes) List() []Remote {
-	if r == nil || r.data == nil {
+	if r == nil || r.Data == nil {
 		return []Remote{}
 	}
 	result := make([]Remote, 0)
-	for _, v := range r.data {
+	for _, v := range r.Data {
 		result = append(result, v...)
 	}
 	return result

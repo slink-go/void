@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 )
 
 func getPort(base, port int) string {
@@ -44,7 +43,7 @@ func main() {
 
 	} else {
 		logging.GetLogger("main").Info("running...")
-		<-make(chan int)
+		handleSignal()
 	}
 
 }
@@ -59,7 +58,6 @@ func handleSignal() {
 		case syscall.SIGKILL:
 			fallthrough
 		case syscall.SIGTERM:
-			time.Sleep(time.Second)
 			os.Exit(0)
 		}
 	}
