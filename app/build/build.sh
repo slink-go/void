@@ -14,7 +14,8 @@ cd ${DIR}/../..
 
 function build_backend() {
     docker build -f ${DIR}/Dockerfile-back                      \
-               --tag mvkvl/api-backend:${VERSION_SHORT}         \
+               --tag mvkvl/api-backend:${VERSION_SHORT}-$1      \
+               --build-arg "TYPE=$1"                            \
                --build-arg "GOLANG_VERSION=${GOLANG_VERSION}"   \
                --build-arg "UPX_VERSION=${UPX_VERSION}" .
 }
@@ -31,9 +32,11 @@ if [[ "$1" == "-h" || "$1" == "help" ]]; then
 elif [ "$1" == "fiber" ]; then
   build_gw_fiber
 elif [ "$1" == "back" ]; then
-  build_backend
+  build_backend "gin"
+#  build_backend "fiber"
 else
   build_gw_fiber
-  build_backend
+  build_backend "gin"
+#  build_backend "fiber"
 fi
 docker system prune -f
