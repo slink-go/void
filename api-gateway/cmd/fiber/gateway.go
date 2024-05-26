@@ -14,7 +14,7 @@ import (
 	p "github.com/gofiber/fiber/v2/middleware/proxy"
 	"github.com/gofiber/fiber/v2/utils"
 	"github.com/palantir/stacktrace"
-	"github.com/slink-go/api-gateway/cmd/fiber/templates"
+	"github.com/slink-go/api-gateway/cmd/common/templates"
 	"github.com/slink-go/api-gateway/gateway"
 	"github.com/slink-go/api-gateway/middleware/context"
 	"github.com/slink-go/api-gateway/middleware/rate"
