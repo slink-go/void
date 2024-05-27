@@ -15,6 +15,12 @@ import (
 	"time"
 )
 
+// TODO:
+//		WS Proxy: https://stackoverflow.com/questions/73187877/how-do-i-implement-a-wss-reverse-proxy-as-a-gin-route
+//  	Monitoring Web UI
+//		Needed Middleware
+//
+
 func main() {
 
 	defer func() {
@@ -34,7 +40,7 @@ func main() {
 
 	var mPort string
 	if monPort := int(env.Int64OrDefault(env.MonitoringPort, 0)); monPort > 0 {
-		mPort = fmt.Sprintf(":%d", monPort)
+		mPort = fmt.Sprintf("127.0.0.1:%d", monPort)
 	}
 
 	ec := createEurekaClient()
@@ -57,6 +63,7 @@ func startGateway(proxyAddr, monitoringAddr string, dc ...discovery.Client) chan
 		WithPathProcessor(resolver.NewPathProcessor())
 
 	quitChn := make(chan struct{})
+
 	go NewGinBasedGateway().
 		WithAuthProvider(ap).
 		WithUserDetailsProvider(udp).

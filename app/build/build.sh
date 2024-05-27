@@ -19,9 +19,9 @@ function build_backend() {
                --build-arg "GOLANG_VERSION=${GOLANG_VERSION}"   \
                --build-arg "UPX_VERSION=${UPX_VERSION}" .
 }
-function build_gw_fiber() {
-  docker build -f ${DIR}/Dockerfile-fiber                       \
-               --tag mvkvl/api-gateway-fiber:${VERSION_SHORT}   \
+function build_gw() {
+  docker build -f ${DIR}/Dockerfile-$1                          \
+               --tag mvkvl/api-gateway-$1:${VERSION_SHORT}      \
                --build-arg "GOLANG_VERSION=${GOLANG_VERSION}"   \
                --build-arg "UPX_VERSION=${UPX_VERSION}" .
 }
@@ -30,12 +30,15 @@ if [[ "$1" == "-h" || "$1" == "help" ]]; then
   echo "Usage: ./build.sh [ back | gin | fiber ]"
   exit 1
 elif [ "$1" == "fiber" ]; then
-  build_gw_fiber
+  build_gw "fiber"
+elif [ "$1" == "gin" ]; then
+  build_gw "gin"
 elif [ "$1" == "back" ]; then
   build_backend "gin"
 #  build_backend "fiber"
 else
-  build_gw_fiber
+  build_gw "fiber"
+  build_gw "gin"
   build_backend "gin"
 #  build_backend "fiber"
 fi

@@ -106,16 +106,16 @@ services:
       - "3221:3000"
       - "3222:3001"
 
-  gateway-a:
+  gateway-fiber:
     deploy:
       resources:
         limits:
           memory: "50M"
     image: mvkvl/api-gateway-fiber:0.0.1
-    container_name: gateway-a
+    container_name: gateway-fiber
     environment:
 
-      - "GATEWAY_NAME=GWA"
+      - "GATEWAY_NAME=GW-FIBER"
       - "SERVICE_PORT=3000"
       - "MONITORING_PORT=3001"
       - "GO_ENV=dev"
@@ -153,16 +153,16 @@ services:
       - "3011:3000"
       - "3012:3001"
     <<: *basic-log
-  gateway-b:
+  gateway-gin:
     deploy:
       resources:
         limits:
           memory: "50M"
-    image: mvkvl/api-gateway-fiber:0.0.1
-    container_name: gateway-b
+    image: mvkvl/api-gateway-gin:0.0.1
+    container_name: gateway-gin
     environment:
 
-      - "GATEWAY_NAME=GWB"
+      - "GATEWAY_NAME=GWB-GIN"
       - "SERVICE_PORT=3000"
       - "MONITORING_PORT=3001"
       - "GO_ENV=dev"
@@ -174,8 +174,8 @@ services:
       - "EUREKA_REFRESH_INTERVAL=10s"
 
       - "DISCO_URL=http://disco:8081"
-      - "DISCO_LOGIN=test"
-      - "DISCO_PASSWORD=test"
+      - "DISCO_LOGIN=disco"
+      - "DISCO_PASSWORD=disco"
       - "DISCO_HEARTBEAT_INTERVAL=5s"
       - "DISCO_REFRESH_INTERVAL=10s"
 
@@ -186,11 +186,11 @@ services:
 
       - "RATE_LIMIT_RPM=150"
 
-      - "LOGGING_LEVEL_ROOT=DEBUG"
+      - "LOGGING_LEVEL_ROOT=INFO"
 #      - "LOGGING_LEVEL_HEADER_AUTH_PROVIDER=TRACE"
 #      - "LOGGING_LEVEL_EUREKA_CLIENT=TRACE"
-      - "LOGGING_LEVEL_DISCO_CLIENT=TRACE"
-      - "LOGGING_LEVEL_DISCOVERY_REGISTRY=TRACE"
+#      - "LOGGING_LEVEL_DISCO_CLIENT=TRACE"
+#      - "LOGGING_LEVEL_DISCOVERY_REGISTRY=TRACE"
 #      - "LOGGING_LEVEL_SERVICE_RESOLVER=TRACE"
 #      - "LOGGING_LEVEL_FIBER_GATEWAY=TRACE"
     volumes:
