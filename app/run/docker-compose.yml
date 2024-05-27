@@ -202,20 +202,20 @@ services:
     <<: *basic-log
 
 
-#  gateway-cloud:
-#    image: mvkvl/cloud-gateway
-#    container_name: cloud-gateway
-#    restart: unless-stopped
-#    stop_grace_period: "2s"
-#    environment:
-#      - "SERVER_PORT=8080"
-#      - "SERVICE_NAME=cloud-gateway"
-#      - "EUREKA_DEFAULT_ZONE=http://eureka:eureka@eureka:8761/eureka"
-#    volumes:
-#      - ./routes:/conf
-#    ports:
-#      - "127.0.0.1:9993:8080"
-#    <<: *basic-log
+  gateway-cloud:
+    image: mvkvl/cloud-gateway
+    container_name: cloud-gateway
+    restart: unless-stopped
+    stop_grace_period: "2s"
+    environment:
+      - "SERVER_PORT=8080"
+      - "SERVICE_NAME=cloud-gateway"
+      - "EUREKA_DEFAULT_ZONE=http://eureka:eureka@eureka:8761/eureka"
+    volumes:
+      - ./routes:/conf
+    ports:
+      - "127.0.0.1:9993:8080"
+    <<: *basic-log
 #  eureka-client:
 #    image: mvkvl/eureka-client
 #    container_name: eureka-client
