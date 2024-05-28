@@ -23,6 +23,9 @@ func NewService(name string) *Service {
 	}
 }
 
+// TODO: 	embedding https://stackoverflow.com/questions/12536574/can-a-go-struct-inherit-a-set-of-values
+//			https://golangbot.com/inheritance/
+
 type Service struct {
 	engine                  *gin.Engine
 	name                    string

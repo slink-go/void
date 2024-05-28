@@ -5,13 +5,13 @@ interface "ServiceRegistry" as R {
 }
 class "StaticRegistry" as SR {
 }
-class "EurekaRegistry" as ER #pink {
+class "EurekaRegistry" as ER {
 }
-class "DiscoRegistry" as DR #pink{
+class "DiscoRegistry" as DR {
 }
-class "EurekaClient" as EC #pink{
+class "EurekaClient" as EC {
 }
-class "DiscoClient" as DC #pink{
+class "DiscoClient" as DC {
 }
 interface "ServiceResolver" as RS {
 }

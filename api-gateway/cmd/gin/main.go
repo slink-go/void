@@ -16,9 +16,26 @@ import (
 )
 
 // TODO:
-//		WS Proxy: https://stackoverflow.com/questions/73187877/how-do-i-implement-a-wss-reverse-proxy-as-a-gin-route
+//		WS Proxy: 	https://stackoverflow.com/questions/73187877/how-do-i-implement-a-wss-reverse-proxy-as-a-gin-route
+// 					https://dev.to/hgsgtk/reverse-http-proxy-over-websocket-in-go-part-1-13n4
+//					https://gist.github.com/seblegall/2a2697fc56417b24a7ec49eb4a8d7b1b
 //  	Monitoring Web UI
 //		Needed Middleware
+//		CSRF protection (?)
+//					https://www.stackhawk.com/blog/golang-csrf-protection-guide-examples-and-how-to-enable-it/
+//					https://github.com/utrack/gin-csrf
+//		Circuit Breaker:
+//					https://gist.github.com/jerryan999/bcfdd746f3f8c2c11c3d27f1b65dfcf3
+//					https://pkg.go.dev/github.com/go-kit/kit/circuitbreaker
+//					https://medium.com/german-gorelkin/go-patterns-circuit-breaker-921a7489597
+//					!!! https://dev.to/he110/circuitbreaker-pattern-in-go-43cn
+//					!!! https://github.com/sony/gobreaker
+//		Hystrix:
+//					https://github.com/afex/hystrix-go
+//
+//	Middleware:
+//		https://github.com/orgs/gin-contrib/repositories
+//		https://github.com/gin-gonic/contrib/tree/master/gzip
 //
 
 func main() {

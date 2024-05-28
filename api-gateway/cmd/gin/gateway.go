@@ -161,7 +161,7 @@ func (g *GinBasedGateway) proxyHandler(ctx *gin.Context) {
 	ctx.Set("X-Forwarded-For", ctx.RemoteIP())
 	ctx.Set("X-Real-Ip", ctx.ClientIP())
 
-	g.reverseProxy.Proxy(proxyTarget).ServeHTTP(ctx.Writer, ctx.Request)
+	g.reverseProxy.Proxy(ctx, proxyTarget).ServeHTTP(ctx.Writer, ctx.Request)
 
 }
 
