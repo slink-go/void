@@ -95,6 +95,7 @@ func (g *GinBasedGateway) Serve(addresses ...string) {
 	if addresses[0] != "" {
 		NewService("proxy").
 			WithPrometheus().
+			WithMiddleware(headersCleanupMiddleware()). // cleanup incoming headers
 			//WithMiddleware(csrf.New()). <-- implement it for Gin
 			WithMiddleware(helmet.Default()).
 			//WithMiddleware(timeoutMiddleware(100 * time.Millisecond)).

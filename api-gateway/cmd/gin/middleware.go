@@ -13,6 +13,26 @@ import (
 	"time"
 )
 
+func headersCleanupMiddleware(headers ...string) gin.HandlerFunc {
+	var hdrs []string
+	if headers == nil || len(headers) == 0 {
+		hdrs = append(hdrs, context.CtxError)
+		hdrs = append(hdrs, context.CtxLocale)
+		hdrs = append(hdrs, context.CtxUserRole)
+		hdrs = append(hdrs, context.CtxUserName)
+		hdrs = append(hdrs, context.CtxUserId)
+		hdrs = append(hdrs, context.CtxProxyTarget)
+		hdrs = append(hdrs, context.CtxAuthToken)
+	} else {
+		hdrs = headers
+	}
+	return func(ctx *gin.Context) {
+		for _, h := range hdrs {
+			delete(ctx.Request.Header, h)
+		}
+	}
+}
+
 // resolve proxy target from URL Path
 func proxyTargetResolverMiddleware(reverseProxy *proxy.ReverseProxy) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
