@@ -20,7 +20,7 @@ x-common: &common
 
 x-backend: &backend
     <<: *common
-    image: mvkvl/api-backend:0.0.1-gin
+    image: slinkgo/test-backend
     env_file:
       - .env.backend
 
@@ -34,62 +34,77 @@ services:
 
   disco:
     <<: *common
-    image: slinkgo/disco:0.0.9
+    image: slinkgo/disco
     container_name: disco
     ports:
       - "127.0.0.1:8771:8081"
       - "127.0.0.1:8772:8082"
     env_file:
       - .env.disco
+  void:
+    deploy:
+      resources:
+        limits:
+          memory: "50M"
+    image: slinkgo/void
+    container_name: void
+    env_file:
+      - .env.void
+    restart: unless-stopped
+    ports:
+      - "3021:3000"
+      - "3022:3001"
+    <<: *basic-log
 
-  backend-a1-gin:
+
+  backend-a1:
     <<: *backend
-    container_name: backend-a-1
+    container_name: backend-a1
     environment:
       - "SERVICE_NAME=service-a"
       - "INSTANCE_ID=1"
     ports:
       - "3111:3000"
       - "3112:3001"
-  backend-a2-gin:
+  backend-a2:
     <<: *backend
-    container_name: backend-a-2
+    container_name: backend-a2
     environment:
       - "SERVICE_NAME=service-a"
       - "INSTANCE_ID=2"
     ports:
       - "3121:3000"
       - "3122:3001"
-  backend-a3-gin:
+  backend-a3:
     <<: *backend
-    container_name: backend-a-3
+    container_name: backend-a3
     environment:
       - "SERVICE_NAME=service-a"
       - "INSTANCE_ID=3"
     ports:
       - "3131:3000"
       - "3132:3001"
-  backend-a4-gin:
+  backend-a4:
     <<: *backend
-    container_name: backend-a-4
+    container_name: backend-a4
     environment:
       - "SERVICE_NAME=service-a"
       - "INSTANCE_ID=4"
     ports:
       - "3141:3000"
       - "3142:3001"
-  backend-b1-gin:
+  backend-b1:
     <<: *backend
-    container_name: backend-b-1
+    container_name: backend-b1
     environment:
       - "SERVICE_NAME=service-b"
       - "INSTANCE_ID=1"
     ports:
       - "3211:3000"
       - "3212:3001"
-  backend-b2-gin:
+  backend-b2:
     <<: *backend
-    container_name: backend-b-2
+    container_name: backend-b2
     environment:
       - "SERVICE_NAME=service-b"
       - "INSTANCE_ID=2"
@@ -97,65 +112,13 @@ services:
       - "3221:3000"
       - "3222:3001"
 
-  gateway-gin:
-    deploy:
-      resources:
-        limits:
-          memory: "50M"
-    image: mvkvl/api-gateway-gin:0.0.1
-    container_name: gateway-gin
-    environment:
-
-      - "GATEWAY_NAME=GW"
-      - "SERVICE_PORT=3000"
-      - "MONITORING_PORT=3001"
-
-      - "AUTH_ENABLED=true"
-      - "AUTH_ENDPOINT=http://auth/api/token/exchange"
-      - "AUTH_RESPONSE_MAPPING_FILE_PATH=/auth_mapping.json"
-
-#      - "EUREKA_URL=http://eureka:8761/eureka"
-      - "EUREKA_LOGIN=eureka"
-      - "EUREKA_PASSWORD=eureka"
-      - "EUREKA_HEARTBEAT_INTERVAL=5s"
-      - "EUREKA_REFRESH_INTERVAL=10s"
-
-      - "DISCO_URL=http://disco:8081"
-      - "DISCO_LOGIN=disco"
-      - "DISCO_PASSWORD=disco"
-      - "DISCO_HEARTBEAT_INTERVAL=5s"
-      - "DISCO_REFRESH_INTERVAL=10s"
-
-#      - "STATIC_REGISTRY_FILE=/conf/registry.yml"
-
-      - "REGISTRY_REFRESH_INITIAL_DELAY=2s"
-      - "REGISTRY_REFRESH_INTERVAL=10s"
-
-      - "RATE_LIMIT_RPM=150"
-
-      - "GO_ENV=dev"
-      - "LOGGING_LEVEL_ROOT=INFO"
-#      - "LOGGING_LEVEL_HEADER_AUTH_PROVIDER=TRACE"
-#      - "LOGGING_LEVEL_EUREKA_CLIENT=TRACE"
-#      - "LOGGING_LEVEL_DISCO_CLIENT=TRACE"
-#      - "LOGGING_LEVEL_DISCOVERY_REGISTRY=TRACE"
-#      - "LOGGING_LEVEL_SERVICE_RESOLVER=TRACE"
-#      - "LOGGING_LEVEL_FIBER_GATEWAY=TRACE"
-    volumes:
-      - ./routes:/conf
-    restart: unless-stopped
-    ports:
-      - "3021:3000"
-      - "3022:3001"
-    <<: *basic-log
-
   eureka:
     hostname: eureka
-    image: "cyberrange/discovery:6.0.0-test"
+    image: "mvkvl/eureka-server"
 #    image: "mvkvl/eureka:"
-    container_name: cr_app_discovery
+    container_name: eureka
     ports:
-      - "9992:9992"
+      - "8761:8761"
     environment:
 #      LOGGING_LEVEL_ROOT: DEBUG
       SERVER_PORT: 9992
@@ -164,74 +127,3 @@ services:
       SPRING_SECURITY_USER_PASSWORD: eureka
       JAVA_OPTS: -Xmx512m -Xms128m -XX:MaxMetaspaceSize=128m -XX:ReservedCodeCacheSize=128m -server -XX:+OptimizeStringConcat -Dfile.encoding=UTF-8 -XX:+ExitOnOutOfMemoryError -XX:+CrashOnOutOfMemoryError --add-opens=java.base/java.net=ALL-UNNAMED
     <<: [ *common]
-  config:
-    image: "cyberrange/config:6.0.0-test"
-    container_name: cr_app_config
-    ports:
-      - "9101:9000"
-    environment:
-      <<: [ *discovery ]
-      LOGGING_LEVEL_ROOT: DEBUG
-      SPRING_SECURITY_USER_NAME: config
-      SPRING_SECURITY_USER_PASSWORD: config
-      SPRING_PROFILES_ACTIVE: native
-      JAVA_OPTS: -Xmx512m -Xms128m -XX:MaxMetaspaceSize=128m -XX:ReservedCodeCacheSize=128m -server -XX:+OptimizeStringConcat -Dfile.encoding=UTF-8 -XX:+ExitOnOutOfMemoryError -XX:+CrashOnOutOfMemoryError --add-opens=java.base/java.net=ALL-UNNAMED
-      CONFIG_PATH: /config
-    volumes:
-      - /opt/work/solar/src/cyberrange/deployment/legacy/config/config:/config:ro
-    <<: [ *common ]
-  gateway:
-    image: "cyberrange/gateway:6.0.0-test"
-    container_name: cr_app_gateway
-    ports:
-      - "9993:8080"
-    environment:
-      <<: [ *discovery, *config ]
-      LOGGING_LEVEL_ROOT: DEBUG
-      SPRING_PROFILES_ACTIVE: web,log,monitoring,integrity,redis,nats,locale
-      JAVA_OPTS: -Xmx512m -Xms128m -XX:MaxMetaspaceSize=128m -XX:ReservedCodeCacheSize=128m -server -XX:+OptimizeStringConcat -Dfile.encoding=UTF-8 -XX:+ExitOnOutOfMemoryError -XX:+CrashOnOutOfMemoryError --add-opens=java.base/java.net=ALL-UNNAMED
-    <<: [ *common ]
-#  auth:
-
-
-#  eureka:
-#    image: mvkvl/eureka-server
-#    container_name: eureka-server
-#    stop_grace_period: "2s"
-#    environment:
-#      - "EUREKA_SERVICE_LOGIN=eureka"
-#      - "EUREKA_SERVICE_PASSWORD=eureka"
-##      - "ROOT_LOGGING_LEVEL=WARN"
-##      - "CUSTOM_LOGGING_LEVEL=WARN"
-##      - "EUREKA_SERVICE_PORT=8761"
-##      - "EUREKA_SERVICE_HOSTNAME=localhost"
-#    ports:
-#      - "127.0.0.1:8761:8761"
-#    <<: *basic-log
-#  gateway-cloud:
-#    image: mvkvl/cloud-gateway
-#    container_name: cloud-gateway
-#    restart: unless-stopped
-#    stop_grace_period: "2s"
-#    environment:
-#      - "SERVER_PORT=8080"
-#      - "SERVICE_NAME=cloud-gateway"
-#      - "EUREKA_DEFAULT_ZONE=http://eureka:eureka@eureka:8761/eureka"
-#    volumes:
-#      - ./routes:/conf
-#    ports:
-#      - "127.0.0.1:9993:8080"
-#    <<: *basic-log
-#  eureka-client:
-#    image: mvkvl/eureka-client
-#    container_name: eureka-client
-#    restart: unless-stopped
-#    stop_grace_period: "2s"
-#    environment:
-#      - "CLIENT_SERVER_PORT=8080"
-#      - "CLIENT_SERVICE_NAME=eureka-client"
-##      - "EUREKA_DEFAULT_ZONE=http://eureka:8761/eureka"
-#      - "EUREKA_DEFAULT_ZONE=http://eureka:eureka@eureka:8761/eureka"
-#    ports:
-#      - "127.0.0.1:9990:8080"
-#    <<: *basic-log

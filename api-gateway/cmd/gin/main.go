@@ -86,8 +86,11 @@ func startGateway(proxyAddr, monitoringAddr string, dc ...discovery.Client) chan
 }
 
 func createEurekaClient() discovery.Client {
-	if env.StringOrDefault(env.EurekaUrl, "") == "" {
+	if !env.BoolOrDefault(env.EurekaClientEnabled, false) {
 		return nil
+	}
+	if env.StringOrDefault(env.EurekaUrl, "") == "" {
+		panic("eureka service URL not set")
 	}
 	dc := discovery.NewEurekaClient(
 		discovery.NewEurekaClientConfig().
@@ -107,8 +110,11 @@ func createEurekaClient() discovery.Client {
 	return dc
 }
 func createDiscoClient() discovery.Client {
-	if env.StringOrDefault(env.DiscoUrl, "") == "" {
+	if !env.BoolOrDefault(env.DiscoClientEnabled, false) {
 		return nil
+	}
+	if env.StringOrDefault(env.DiscoUrl, "") == "" {
+		panic("disco service URL not set")
 	}
 	dc := discovery.NewDiscoClient(
 		discovery.NewDiscoClientConfig().

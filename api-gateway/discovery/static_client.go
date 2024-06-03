@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/slink-go/api-gateway/discovery/util"
 	"github.com/slink-go/logging"
+	"gopkg.in/yaml.v3"
 	"io"
 	"os"
 	"strings"

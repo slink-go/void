@@ -90,14 +90,17 @@ func (g *GinBasedGateway) Serve(addresses ...string) {
 		panic("service address(es) not set")
 	}
 
-	if len(addresses) > 1 && addresses[1] != "" {
-		go NewService("monitor").
-			//WithPrometheus().
-			//WithHandler("/monitor", monitor.New(monitor.Config{Title: "VOID API Gateway (monitoring)"})) // TODO: fiber-like monitoring
-			WithGetHandlers("/", g.monitoringPage).
-			WithGetHandlers("/list", g.listRemotes).
-			WithStatic("/s", "./static").
-			Run(addresses[1])
+	if env.BoolOrDefault(env.MonitoringEnabled, false) {
+		if len(addresses) > 1 && addresses[1] != "" {
+			go NewService("monitor").
+				//WithHandler("/monitor", monitor.New(monitor.Config{Title: "VOID API Gateway (monitoring)"})) // TODO: fiber-like monitoring
+				WithGetHandlers("/", g.monitoringPage).
+				WithGetHandlers("/list", g.listRemotes).
+				WithStatic("/s", "./static").
+				Run(addresses[1])
+		} else {
+			g.logger.Warning("no monitoring port set; disable monitoring")
+		}
 	}
 	if addresses[0] != "" {
 		authEnabled := env.BoolOrDefault(env.AuthEnabled, false)
