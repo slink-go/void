@@ -78,7 +78,7 @@ d) http://{host}/SERVICE-A/some/rest/endpoint         -> http://{SERVICE-A-HOST}
 If multiple instances are discovered for resolved service name, VOID will load balance between all of them using round-robin algorithm.
 
 ### Circuit breaker
-TBD: implement circuit breaker for dead peers (if requests to some instance of service fail, this instance should be 
+> TBD: implement circuit breaker for dead peers (if requests to some instance of service fail, this instance should be 
 removed from load balancing until "circuit" is restored)
 
 ## Request Authentication
@@ -138,13 +138,13 @@ VOID won't make subsequent authentication requests to authentication service, un
 timeout is set via `AUTH_CACHE_TTL` variable (should be reasonably low value, i.e. 10-30 seconds). 
 
 ### Auth Skip
-TBD: skip authentication for certain URL patterns
+> TBD: skip authentication for certain URL patterns
 
 ## Rate Limiting
-TBD: implement waiting/denying rate limiters
+> TBD: implement waiting/denying rate limiters
 
 ## Request Timeouts
-TBD: implement request timeouts (with configurable skip URL patterns)
+> TBD: implement request timeouts (with configurable skip URL patterns)
 
 ## SSL Support
-TBD: enable SSL support
+> TBD: enable SSL support
