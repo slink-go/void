@@ -68,10 +68,12 @@ Full config see [here](https://github.com/slink-go/void/blob/master/app/run/dock
 
 ## Reverse Proxy
 With dynamic discovery enabled (Disco and/or Eureka client is enabled) VOID tries to get target service name from request URL Path applying following path conversion rules:
-- `http://{host}/api/SERVICE-A/some/rest/endpoint` -> `http://{SERVICE-A-HOST}:{SERVICE-A-PORT}/api/some/rest/endpoint`
-- `http://{host}/SERVICE-A/api/some/rest/endpoint` -> `http://{SERVICE-A-HOST}:{SERVICE-A-PORT}/api/some/rest/endpoint`
-- `http://{host}/api/SERVICE-A/api/some/rest/endpoint` -> `http://{SERVICE-A-HOST}:{SERVICE-A-PORT}/api/some/rest/endpoint`
-- `http://{host}/SERVICE-A/some/rest/endpoint` -> `http://{SERVICE-A-HOST}:{SERVICE-A-PORT}/some/rest/endpoint`
+```text
+a) http://{host}/api/SERVICE-A/some/rest/endpoint     -> http://{SERVICE-A-HOST}:{SERVICE-A-PORT}/api/some/rest/endpoint
+b) http://{host}/SERVICE-A/api/some/rest/endpoint     -> http://{SERVICE-A-HOST}:{SERVICE-A-PORT}/api/some/rest/endpoint
+c) http://{host}/api/SERVICE-A/api/some/rest/endpoint -> http://{SERVICE-A-HOST}:{SERVICE-A-PORT}/api/some/rest/endpoint
+d) http://{host}/SERVICE-A/some/rest/endpoint         -> http://{SERVICE-A-HOST}:{SERVICE-A-PORT}/some/rest/endpoint
+```
 
 If multiple instances are discovered for resolved service name, VOID will load balance between all of them using round-robin algorithm.
 
