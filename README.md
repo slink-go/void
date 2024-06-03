@@ -102,7 +102,7 @@ authentication server sends following user details:
 }
 
 ```
-So VOID should be configured with appropriate following mapping file: 
+So VOID should be configured with appropriate following mapping file (`AUTH_RESPONSE_MAPPING_FILE_PATH`): 
 
 ```json
 {
@@ -117,7 +117,7 @@ So VOID should be configured with appropriate following mapping file:
   }
 }
 ```
-(i.e. each field, which should be mapped to context, should be mentioned in mapping file with related context (header name) field)
+i.e. each field, which should be mapped to context, should be mentioned in mapping file with related context field (header name)
 
 So in our example following request headers will be set:
 ```text

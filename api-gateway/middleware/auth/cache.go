@@ -5,6 +5,7 @@ import (
 	"github.com/jellydator/ttlcache/v3"
 	"github.com/slink-go/api-gateway/middleware/security"
 	"github.com/slink-go/logging"
+	"math"
 	"os"
 	"os/signal"
 	"syscall"
@@ -64,7 +65,10 @@ func (c *userDetailsCache) Set(token string, user security.UserDetails) {
 }
 
 func (c *userDetailsCache) run(duration time.Duration) {
-	timer := time.NewTimer(duration)
+	v := duration.Milliseconds()
+	vv := time.Duration(math.Max(1000, float64(v)/2))
+	delay := time.Millisecond * vv
+	timer := time.NewTimer(delay)
 	for {
 		select {
 		case <-c.stopChn:
@@ -72,7 +76,7 @@ func (c *userDetailsCache) run(duration time.Duration) {
 		case <-timer.C:
 			c.cache.DeleteExpired()
 		}
-		timer.Reset(duration)
+		timer.Reset(delay)
 	}
 }
 
