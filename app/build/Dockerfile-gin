@@ -7,17 +7,14 @@ WORKDIR         /src/api-gateway/cmd/gin
 RUN go install github.com/a-h/templ/cmd/templ@latest
 RUN templ generate
 RUN CGO_ENABLED=0 GOOS=linux go get && go mod tidy
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /gin-proxy .
-RUN upx --best -o /gin-proxy-packed  /gin-proxy
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /void .
+RUN upx --best -o /void-packed  /void
 
 FROM scratch
 WORKDIR /
-#FROM debian:10-slim
-#RUN apt update && apt install iputils-ping -y
 
-COPY --from=build   /gin-proxy-packed   /gin-proxy
-#COPY --from=build   /gin-proxy   /fiber-proxy
+COPY --from=build   /void-packed   /void
 COPY --from=build   /src/app/run/static/mini-default.min.css /static/mini-default.min.css
 COPY --from=build   /src/app/run/auth_mapping.json /auth_mapping.json
 
-CMD ["/gin-proxy"]
+CMD ["/void"]

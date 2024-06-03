@@ -102,7 +102,7 @@ authentication server sends following user details:
 }
 
 ```
-So VOID should be configured with appropriate following mapping file (`AUTH_RESPONSE_MAPPING_FILE_PATH`): 
+So VOID should be configured with following mapping file (`AUTH_RESPONSE_MAPPING_FILE_PATH`): 
 
 ```json
 {
