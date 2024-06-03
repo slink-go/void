@@ -1,5 +1,7 @@
 package security
 
+import "github.com/slink-go/api-gateway/resolver"
+
 // region - Auth
 
 type Type int
@@ -8,6 +10,7 @@ const (
 	TypeNone Type = iota
 	TypeBasic
 	TypeBearer
+	TypeCookie
 )
 
 type Auth interface {
@@ -20,22 +23,25 @@ type Auth interface {
 
 type AuthProvider interface {
 	Get(args ...string) (Auth, error)
+	WithProvider(provider AuthProvider) AuthProvider
 }
 
 // endregion
 // region - UserDetails
 
-type UserDetails struct {
-	UserId   string
-	UserName string
-	UserRole string
-}
+type UserDetails map[string]string
 
 // endregion
 // region - UserDetails
 
 type UserDetailsProvider interface {
-	Get(auth Auth) (*UserDetails, error)
+	Get(token string) (UserDetails, error)
+	WithAuthProvider(provider AuthProvider) UserDetailsProvider
+	WithServiceResolver(resolver resolver.ServiceResolver) UserDetailsProvider
+	WithPathProcessor(processor resolver.PathProcessor) UserDetailsProvider
+	WithAuthEndpoint(endpoint string) UserDetailsProvider
+	WithMethod(method string) UserDetailsProvider
+	WithResponseParser(parser ResponseParser) UserDetailsProvider
 }
 
 // endregion

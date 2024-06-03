@@ -1,9 +1,12 @@
 ARG GOLANG_VERSION
 ARG UPX_VERSION
+ARG TYPE
+
 FROM mvkvl/golang_upx:${GOLANG_VERSION}-upx-${UPX_VERSION} AS build
+ARG TYPE
 
 COPY        /   /src
-WORKDIR         /src/backend
+WORKDIR         /src/backend/${TYPE}
 RUN CGO_ENABLED=0 GOOS=linux go get && go mod tidy
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /backend .
 RUN upx --best -o /backend-packed  /backend

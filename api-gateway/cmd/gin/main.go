@@ -2,19 +2,20 @@ package main
 
 import (
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"github.com/slink-go/api-gateway/cmd/common"
 	"github.com/slink-go/api-gateway/cmd/common/env"
 	"github.com/slink-go/api-gateway/discovery"
+	"github.com/slink-go/api-gateway/middleware/auth"
 	"github.com/slink-go/api-gateway/middleware/rate"
 	"github.com/slink-go/api-gateway/middleware/security"
 	"github.com/slink-go/api-gateway/proxy"
 	"github.com/slink-go/api-gateway/registry"
 	"github.com/slink-go/api-gateway/resolver"
 	"github.com/slink-go/logging"
+	"os"
 	"time"
 )
-
-// https://docs.gofiber.io/category/-middleware/
 
 func main() {
 
@@ -26,6 +27,8 @@ func main() {
 
 	common.LoadEnv()
 
+	gin.SetMode(gin.ReleaseMode)
+
 	var sPort string
 	if svcPort := int(env.Int64OrDefault(env.ServicePort, 0)); svcPort > 0 {
 		sPort = fmt.Sprintf(":%d", svcPort)
@@ -33,44 +36,59 @@ func main() {
 
 	var mPort string
 	if monPort := int(env.Int64OrDefault(env.MonitoringPort, 0)); monPort > 0 {
-		mPort = fmt.Sprintf(":%d", monPort)
+		mPort = fmt.Sprintf("127.0.0.1:%d", monPort)
 	}
 
 	ec := createEurekaClient()
 	dc := createDiscoClient()
 	sc := createStaticClient()
 
-	<-startGateway("common", sPort, mPort, ec, dc, sc)
+	<-startGateway(sPort, mPort, ec, dc, sc)
 	time.Sleep(10 * time.Millisecond)
 }
 
-func startGateway(title, saddr, maddr string, dc ...discovery.Client) chan struct{} {
+func startGateway(proxyAddr, monitoringAddr string, dc ...discovery.Client) chan struct{} {
 
-	ap := security.NewHttpHeaderAuthProvider()
-	udp := security.NewStubUserDetailsProvider()
 	limiter := rate.NewLimiter(int(env.Int64OrDefault(env.RateLimitRPM, 0)))
 	reg := registry.NewServiceRegistry(dc...)
 
-	pr := proxy.CreateReverseProxy().
-		WithServiceResolver(resolver.NewServiceResolver(reg)).
-		WithPathProcessor(resolver.NewPathProcessor())
+	res := resolver.NewServiceResolver(reg)
+	proc := resolver.NewPathProcessor()
+
+	ap := security.NewAuthChain().
+		WithProvider(security.NewHttpHeaderAuthProvider()).
+		WithProvider(security.NewCookieAuthProvider())
+
+	udp := security.NewTokenBasedUserDetailsProvider().
+		WithAuthProvider(ap).
+		WithServiceResolver(res).
+		WithPathProcessor(proc).
+		WithMethod(env.StringOrDefault(env.AuthMethod, "GET")).
+		WithAuthEndpoint(env.StringOrDefault(env.AuthEndpoint, "")).
+		WithResponseParser(security.NewResponseParser().LoadMapping(os.Getenv(env.AuthResponseMappingFilePath)))
+
+	pr := proxy.CreateReverseProxy().WithServiceResolver(res).WithPathProcessor(proc)
 
 	quitChn := make(chan struct{})
-	go NewFiberBasedGateway().
+
+	go NewGinBasedGateway().
 		WithAuthProvider(ap).
+		WithUserDetailsCache(auth.NewUserDetailsCache(env.DurationOrDefault(env.AuthCacheTTL, time.Second*30))).
 		WithUserDetailsProvider(udp).
 		WithRateLimiter(limiter).
 		WithReverseProxy(pr).
 		WithRegistry(reg).
 		WithQuitChn(quitChn).
-		Serve(saddr, maddr)
+		Serve(proxyAddr, monitoringAddr)
 
-	//logging.GetLogger("main").Info(fmt.Sprintf("started %s api gateway on %d", title, port))
 	return quitChn
 
 }
 
 func createEurekaClient() discovery.Client {
+	if env.StringOrDefault(env.EurekaUrl, "") == "" {
+		return nil
+	}
 	dc := discovery.NewEurekaClient(
 		discovery.NewEurekaClientConfig().
 			WithUrl(env.StringOrDefault(env.EurekaUrl, "")).
@@ -89,6 +107,9 @@ func createEurekaClient() discovery.Client {
 	return dc
 }
 func createDiscoClient() discovery.Client {
+	if env.StringOrDefault(env.DiscoUrl, "") == "" {
+		return nil
+	}
 	dc := discovery.NewDiscoClient(
 		discovery.NewDiscoClientConfig().
 			WithUrl(env.StringOrDefault(env.DiscoUrl, "")).

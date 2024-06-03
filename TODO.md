@@ -4,37 +4,91 @@
 1. *~~Reverse proxy~~*
 2. *~~Target resolver~~*
 3. *~~Context setup~~*
-4. *~~Rate limit~~*
+4. Rate limit
 5. *~~Log request~~*
 6. *~~Static resolver (+ load balancing)~~*
 7. *~~Eureka service resolver (+ load balancing)~~*
 8. *~~Disco service resolver~~*
 9. K8S service resolver
-10. Multiple service resolvers support (static + eureka + disco) (?)
-11. Cookie AuthToken support
-12. AuthProvider chaining ( http header -> cookie -> ... )
+10. ~~*Multiple service resolvers support (static + eureka + disco)*~~
+11. ~~*Cookie AuthToken support*~~
+12. ~~*AuthProvider chaining ( http header -> cookie -> ... )*~~
 13. Fallback (to default backend service) (?)
 14. Profiling
 15. Configuration & feature flags
 16. Handle dead peers (connection refused)
 17. Remote peers filter (?) (by meta, by status, ...)
-18. Static resolver config from file
-19. Client: advertise custom address / port (for specific deployment cases) - через META
-20. advertise app info url (?) | а как ходить в докер на этот url? только что открывать порт
+18. ~~*Static resolver config from file*~~
+19. Client: advertise custom address / port (for specific deployment cases) - using META
+20. advertise app info url (?)
 21. gRPC gateway 
 22. Pattern matcher
+23. CSRF (?)
+24. Correct errors handling
 
 
 ### Middleware
-1. Auth check
-2. Cyberrange auth provider | [common] rest-auth-provider
-3. Timeout support
-4. ~~*Metrics / latency measurement*~~ (встроенный в fiber мониторинг + prometheus exporter)
+1. ~~*Auth check*~~
+    - clean on start
+    - execute
+    - clean on finish
+2. ~~*rest-auth-provider*~~
+3. Timeout support (except sse/ws)
+4. Metrics / latency measurement
 5. Bulkhead / circuit breaker / etc
-6. ~~*Limiter config*~~
+6. Limiter config
+7. Auth cache middleware
+   + ~~*inmem*~~
+   - redis
+8. Rate Limiter
+   - waiting
+   - denying
+   - rate limiter config from discovery peer meta
+9. Cookie Auth: configurable cookie name
+10. instead of HostResolve use disco-client resolving capabilities (falling back to HostResolve)
 
-### Disco-Go
-1. применить новый логгер
-2. 
+### URL Pattern Matching
+1. auth skip urls
+2. timeout skip urls
+3. rate limit skip urls
 
-см. https://github.com/orange-cloudfoundry/gobis
+### Procedure
+```text
+- latency-middleware::start
+- rate-limiter-middleware
++ proxy-target-resolver-middleware -> url -> proxy-url : (considering circuit breaker)
+- circuit breaker middleware
++ headers-cleanup-middleware::start
++ auth-resolver-middleware 	-> 	header/cookie -> ctx.Set(Auth) => check token validity
+- auth-cache-middleware -> Auth -> ctx.Set(UserDetails)
++ auth-provider-middleware	->	get user details from remote peer
+    + token exchange (in case of correct Auth) -> ctx.Set(UserDetails)
+    - backoff
+    - circuit breaker
++ locale-resolver-middleware
++ context-configurer-middleware -> set request headers (ctx.Get(UserDetails) -> ctx.SetHeader(...))
++ do proxy
+- headers-cleanup-middleware::finish
+- latency-middleware::finish -> set custom metrics
+```
+
+### Useful links
+- WS Proxy: 	
+   - https://stackoverflow.com/questions/73187877/how-do-i-implement-a-wss-reverse-proxy-as-a-gin-route
+   - https://dev.to/hgsgtk/reverse-http-proxy-over-websocket-in-go-part-1-13n4
+   - https://gist.github.com/seblegall/2a2697fc56417b24a7ec49eb4a8d7b1b
+- CSRF protection (?)
+   - https://www.stackhawk.com/blog/golang-csrf-protection-guide-examples-and-how-to-enable-it/
+   - https://github.com/utrack/gin-csrf
+- Circuit Breaker:
+   - https://gist.github.com/jerryan999/bcfdd746f3f8c2c11c3d27f1b65dfcf3
+   - https://pkg.go.dev/github.com/go-kit/kit/circuitbreaker
+   - https://medium.com/german-gorelkin/go-patterns-circuit-breaker-921a7489597
+   - !!! https://dev.to/he110/circuitbreaker-pattern-in-go-43cn
+   - !!! https://github.com/sony/gobreaker
+- Hystrix:
+   - https://github.com/afex/hystrix-go
+- Middleware:
+   - https://github.com/orgs/gin-contrib/repositories
+   - https://github.com/gin-gonic/contrib/tree/master/gzip
+

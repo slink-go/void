@@ -213,7 +213,6 @@ func (c *eurekaClient) handleSignal() {
 					c.logger.Info("application instance de-registered")
 				}
 			}
-			//time.Sleep(time.Second) // чтобы остальные сервисы успели завершиться
 			return
 		}
 	}

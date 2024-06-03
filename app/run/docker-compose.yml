@@ -8,21 +8,111 @@ x-log-basic: &basic-log
       max-file: "3"
       labels: "system"
 
+x-common: &common
+    deploy:
+      resources:
+        limits:
+          cpus: "0.1"
+          memory: "50M"
+    restart: unless-stopped
+    stop_grace_period: "10s"
+    <<: *basic-log
+
+x-backend: &backend
+    <<: *common
+    image: mvkvl/api-backend:0.0.1-gin
+    env_file:
+      - .env.backend
+
+x-discovery: &discovery
+  EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://eureka:eureka@eureka:9992/eureka"
+x-config: &config
+  SPRING_CLOUD_CONFIG_USERNAME: config
+  SPRING_CLOUD_CONFIG_PASSWORD: config
+
 services:
 
-  gateway-a:
+  disco:
+    <<: *common
+    image: slinkgo/disco:0.0.9
+    container_name: disco
+    ports:
+      - "127.0.0.1:8771:8081"
+      - "127.0.0.1:8772:8082"
+    env_file:
+      - .env.disco
+
+  backend-a1-gin:
+    <<: *backend
+    container_name: backend-a-1
+    environment:
+      - "SERVICE_NAME=service-a"
+      - "INSTANCE_ID=1"
+    ports:
+      - "3111:3000"
+      - "3112:3001"
+  backend-a2-gin:
+    <<: *backend
+    container_name: backend-a-2
+    environment:
+      - "SERVICE_NAME=service-a"
+      - "INSTANCE_ID=2"
+    ports:
+      - "3121:3000"
+      - "3122:3001"
+  backend-a3-gin:
+    <<: *backend
+    container_name: backend-a-3
+    environment:
+      - "SERVICE_NAME=service-a"
+      - "INSTANCE_ID=3"
+    ports:
+      - "3131:3000"
+      - "3132:3001"
+  backend-a4-gin:
+    <<: *backend
+    container_name: backend-a-4
+    environment:
+      - "SERVICE_NAME=service-a"
+      - "INSTANCE_ID=4"
+    ports:
+      - "3141:3000"
+      - "3142:3001"
+  backend-b1-gin:
+    <<: *backend
+    container_name: backend-b-1
+    environment:
+      - "SERVICE_NAME=service-b"
+      - "INSTANCE_ID=1"
+    ports:
+      - "3211:3000"
+      - "3212:3001"
+  backend-b2-gin:
+    <<: *backend
+    container_name: backend-b-2
+    environment:
+      - "SERVICE_NAME=service-b"
+      - "INSTANCE_ID=2"
+    ports:
+      - "3221:3000"
+      - "3222:3001"
+
+  gateway-gin:
     deploy:
       resources:
         limits:
           memory: "50M"
-    image: mvkvl/api-gateway-fiber:0.0.1
-    container_name: gateway-a
+    image: mvkvl/api-gateway-gin:0.0.1
+    container_name: gateway-gin
     environment:
 
-      - "GATEWAY_NAME=GWA"
+      - "GATEWAY_NAME=GW"
       - "SERVICE_PORT=3000"
       - "MONITORING_PORT=3001"
-      - "GO_ENV=dev"
+
+      - "AUTH_ENABLED=true"
+      - "AUTH_ENDPOINT=http://auth/api/token/exchange"
+      - "AUTH_RESPONSE_MAPPING_FILE_PATH=/auth_mapping.json"
 
 #      - "EUREKA_URL=http://eureka:8761/eureka"
       - "EUREKA_LOGIN=eureka"
@@ -33,53 +123,6 @@ services:
       - "DISCO_URL=http://disco:8081"
       - "DISCO_LOGIN=disco"
       - "DISCO_PASSWORD=disco"
-      - "DISCO_HEARTBEAT_INTERVAL=5s"
-      - "DISCO_REFRESH_INTERVAL=10s"
-
-#      - "STATIC_REGISTRY_FILE=/conf/registry.yml"
-
-      - "REGISTRY_REFRESH_INITIAL_DELAY=2s"
-      - "REGISTRY_REFRESH_INTERVAL=10s"
-
-#      - "RATE_LIMIT_RPM=150"
-
-      - "LOGGING_LEVEL_ROOT=DEBUG"
-#      - "LOGGING_LEVEL_HEADER_AUTH_PROVIDER=TRACE"
-#      - "LOGGING_LEVEL_EUREKA_CLIENT=TRACE"
-      - "LOGGING_LEVEL_DISCO_CLIENT=TRACE"
-      - "LOGGING_LEVEL_DISCOVERY_REGISTRY=TRACE"
-#      - "LOGGING_LEVEL_SERVICE_RESOLVER=TRACE"
-#      - "LOGGING_LEVEL_FIBER_GATEWAY=TRACE"
-    volumes:
-      - ./routes:/conf
-    restart: unless-stopped
-    ports:
-      - "3011:3000"
-      - "3012:3001"
-    <<: *basic-log
-  gateway-b:
-    deploy:
-      resources:
-        limits:
-          memory: "50M"
-    image: mvkvl/api-gateway-fiber:0.0.1
-    container_name: gateway-b
-    environment:
-
-      - "GATEWAY_NAME=GWB"
-      - "SERVICE_PORT=3000"
-      - "MONITORING_PORT=3001"
-      - "GO_ENV=dev"
-
-#      - "EUREKA_URL=http://eureka:8761/eureka"
-      - "EUREKA_LOGIN=eureka"
-      - "EUREKA_PASSWORD=eureka"
-      - "EUREKA_HEARTBEAT_INTERVAL=5s"
-      - "EUREKA_REFRESH_INTERVAL=10s"
-
-      - "DISCO_URL=http://disco:8081"
-      - "DISCO_LOGIN=test"
-      - "DISCO_PASSWORD=test"
       - "DISCO_HEARTBEAT_INTERVAL=5s"
       - "DISCO_REFRESH_INTERVAL=10s"
 
@@ -90,11 +133,12 @@ services:
 
       - "RATE_LIMIT_RPM=150"
 
-      - "LOGGING_LEVEL_ROOT=DEBUG"
+      - "GO_ENV=dev"
+      - "LOGGING_LEVEL_ROOT=INFO"
 #      - "LOGGING_LEVEL_HEADER_AUTH_PROVIDER=TRACE"
 #      - "LOGGING_LEVEL_EUREKA_CLIENT=TRACE"
-      - "LOGGING_LEVEL_DISCO_CLIENT=TRACE"
-      - "LOGGING_LEVEL_DISCOVERY_REGISTRY=TRACE"
+#      - "LOGGING_LEVEL_DISCO_CLIENT=TRACE"
+#      - "LOGGING_LEVEL_DISCOVERY_REGISTRY=TRACE"
 #      - "LOGGING_LEVEL_SERVICE_RESOLVER=TRACE"
 #      - "LOGGING_LEVEL_FIBER_GATEWAY=TRACE"
     volumes:
@@ -105,78 +149,54 @@ services:
       - "3022:3001"
     <<: *basic-log
 
-  backend-a:
-    deploy:
-      resources:
-        limits:
-          memory: "50M"
-    image: mvkvl/api-backend:0.0.1
-    container_name: backend-a
-    environment:
-      - "BASE_PORT=5000"
-      - "EUREKA_URL=http://eureka:8761/eureka"
-      - "EUREKA_LOGIN=eureka"
-      - "EUREKA_PASSWORD=eureka"
-      - "EUREKA_HEARTBEAT_INTERVAL=5s"
-      - "EUREKA_REFRESH_INTERVAL=10s"
-      - "DISCO_URL=http://disco:8081"
-      - "DISCO_LOGIN=disco"
-      - "DISCO_PASSWORD=disco"
-      - "LOGGING_LEVEL_ROOT=DEBUG"
-    restart: unless-stopped
-    <<: *basic-log
-  backend-b:
-    deploy:
-      resources:
-        limits:
-          memory: "50M"
-    image: mvkvl/api-backend:0.0.1
-    container_name: backend-b
-    environment:
-      - "BASE_PORT=6000"
-      - "EUREKA_URL=http://eureka:8761/eureka"
-      - "EUREKA_LOGIN=eureka"
-      - "EUREKA_PASSWORD=eureka"
-      - "EUREKA_HEARTBEAT_INTERVAL=5s"
-      - "EUREKA_REFRESH_INTERVAL=10s"
-      - "DISCO_URL=http://disco:8081"
-      - "DISCO_LOGIN=test"
-      - "DISCO_PASSWORD=test"
-      - "LOGGING_LEVEL_ROOT=DEBUG"
-    restart: unless-stopped
-    <<: *basic-log
-
-  disco:
-    deploy:
-      resources:
-        limits:
-          cpus: "0.1"
-          memory: "100M"
-    image: slinkgo/disco:0.0.9
-    container_name: disco
+  eureka:
+    hostname: eureka
+    image: "cyberrange/discovery:6.0.0-test"
+#    image: "mvkvl/eureka:"
+    container_name: cr_app_discovery
     ports:
-      - "127.0.0.1:8771:8081"
-      - "127.0.0.1:8772:8082"
+      - "9992:9992"
     environment:
-      - "GO_ENV=dev"
-#      - DISCO_MAX_CLIENTS=250
-      - "DISCO_SERVICE_PORT=8081"
-      - "DISCO_MONITORING_PORT=8082"
-      - "DISCO_LIMIT_RATE=1000"
-      - "DISCO_LIMIT_BURST=1500"
-      - "DISCO_PING_INTERVAL=2s"
-      - "DISCO_CLIENT_FAILING_THRESHOLD=3"
-      - "DISCO_CLIENT_DOWN_THRESHOLD=4"
-      - "DISCO_CLIENT_REMOVE_THRESHOLD=5"
-      - "DISCO_USERS=disco:disco,test:test"
-      - "LOGGING_LEVEL_ROOT=DEBUG"
-      - "LOGGING_LEVEL=DEBUG"
-    restart: unless-stopped
+#      LOGGING_LEVEL_ROOT: DEBUG
+      SERVER_PORT: 9992
+      MANAGEMENT_SERVER_PORT: 9000
+      SPRING_SECURITY_USER_NAME: eureka
+      SPRING_SECURITY_USER_PASSWORD: eureka
+      JAVA_OPTS: -Xmx512m -Xms128m -XX:MaxMetaspaceSize=128m -XX:ReservedCodeCacheSize=128m -server -XX:+OptimizeStringConcat -Dfile.encoding=UTF-8 -XX:+ExitOnOutOfMemoryError -XX:+CrashOnOutOfMemoryError --add-opens=java.base/java.net=ALL-UNNAMED
+    <<: [ *common]
+  config:
+    image: "cyberrange/config:6.0.0-test"
+    container_name: cr_app_config
+    ports:
+      - "9101:9000"
+    environment:
+      <<: [ *discovery ]
+      LOGGING_LEVEL_ROOT: DEBUG
+      SPRING_SECURITY_USER_NAME: config
+      SPRING_SECURITY_USER_PASSWORD: config
+      SPRING_PROFILES_ACTIVE: native
+      JAVA_OPTS: -Xmx512m -Xms128m -XX:MaxMetaspaceSize=128m -XX:ReservedCodeCacheSize=128m -server -XX:+OptimizeStringConcat -Dfile.encoding=UTF-8 -XX:+ExitOnOutOfMemoryError -XX:+CrashOnOutOfMemoryError --add-opens=java.base/java.net=ALL-UNNAMED
+      CONFIG_PATH: /config
+    volumes:
+      - /opt/work/solar/src/cyberrange/deployment/legacy/config/config:/config:ro
+    <<: [ *common ]
+  gateway:
+    image: "cyberrange/gateway:6.0.0-test"
+    container_name: cr_app_gateway
+    ports:
+      - "9993:8080"
+    environment:
+      <<: [ *discovery, *config ]
+      LOGGING_LEVEL_ROOT: DEBUG
+      SPRING_PROFILES_ACTIVE: web,log,monitoring,integrity,redis,nats,locale
+      JAVA_OPTS: -Xmx512m -Xms128m -XX:MaxMetaspaceSize=128m -XX:ReservedCodeCacheSize=128m -server -XX:+OptimizeStringConcat -Dfile.encoding=UTF-8 -XX:+ExitOnOutOfMemoryError -XX:+CrashOnOutOfMemoryError --add-opens=java.base/java.net=ALL-UNNAMED
+    <<: [ *common ]
+#  auth:
+
 
 #  eureka:
 #    image: mvkvl/eureka-server
 #    container_name: eureka-server
-#    restart: unless-stopped
 #    stop_grace_period: "2s"
 #    environment:
 #      - "EUREKA_SERVICE_LOGIN=eureka"

@@ -3,20 +3,21 @@ ARG UPX_VERSION
 FROM mvkvl/golang_upx:${GOLANG_VERSION}-upx-${UPX_VERSION} AS build
 
 COPY        /   /src
-WORKDIR         /src/api-gateway/cmd/fiber
+WORKDIR         /src/api-gateway/cmd/gin
 RUN go install github.com/a-h/templ/cmd/templ@latest
 RUN templ generate
 RUN CGO_ENABLED=0 GOOS=linux go get && go mod tidy
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /fiber-proxy .
-RUN upx --best -o /fiber-proxy-packed  /fiber-proxy
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /gin-proxy .
+RUN upx --best -o /gin-proxy-packed  /gin-proxy
 
 FROM scratch
-
+WORKDIR /
 #FROM debian:10-slim
 #RUN apt update && apt install iputils-ping -y
 
-COPY --from=build   /fiber-proxy-packed   /fiber-proxy
-#COPY --from=build   /fiber-proxy   /fiber-proxy
+COPY --from=build   /gin-proxy-packed   /gin-proxy
+#COPY --from=build   /gin-proxy   /fiber-proxy
 COPY --from=build   /src/app/run/static/mini-default.min.css /static/mini-default.min.css
+COPY --from=build   /src/app/run/auth_mapping.json /auth_mapping.json
 
-CMD ["/fiber-proxy"]
+CMD ["/gin-proxy"]

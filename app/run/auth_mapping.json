@@ -1,0 +1,18 @@
+{
+  "id": "Ctx-User-Id",
+  "email": "Ctx-User-Email",
+  "name": "Ctx-User-Name",
+  "firstName": "Ctx-User-First-Name",
+  "middleName": "Ctx-User-Middle-Name",
+  "lastName": "Ctx-User-Last-Name",
+  "role": "Ctx-User-Role",
+  "status": "Ctx-User-Status",
+  "position": "Ctx-User-Position",
+  "authorities": "Ctx-User-Authorities",
+  "timeZone": "Ctx-User-Timezone",
+  "org": {
+    "id": "Ctx-Org-Id",
+    "active": "Ctx-Org-Active",
+    "internal": "Ctx-Org-Internal"
+  }
+}

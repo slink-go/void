@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/slink-go/api-gateway/discovery/util"
 	"github.com/slink-go/logging"
-	"gopkg.in/yaml.v3"
 	"io"
 	"os"
 	"strings"
@@ -49,8 +48,8 @@ func LoadFromFile(path string) (Client, error) {
 	}
 
 	result := Remotes{}
-	for _, service := range cfg { //.services {
-		for _, instance := range service.Instances { //service.instances {
+	for _, service := range cfg {
+		for _, instance := range service.Instances {
 			s, h, p := util.ParseEndpoint(instance)
 			result.Add(service.Name, Remote{
 				App:    service.Name,

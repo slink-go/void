@@ -6,6 +6,12 @@ const (
 	MonitoringPort = "MONITORING_PORT"
 	GatewayName    = "GATEWAY_NAME"
 
+	AuthEnabled                 = "AUTH_ENABLED"
+	AuthEndpoint                = "AUTH_ENDPOINT"
+	AuthMethod                  = "AUTH_METHOD"
+	AuthResponseMappingFilePath = "AUTH_RESPONSE_MAPPING_FILE_PATH"
+	AuthCacheTTL                = "10s"
+
 	EurekaUrl               = "EUREKA_URL"                //
 	EurekaLogin             = "EUREKA_LOGIN"              //
 	EurekaPassword          = "EUREKA_PASSWORD"           //

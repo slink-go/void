@@ -1,0 +1,12 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="gateway/fiber" type="GoApplicationRunConfiguration" factoryName="Go Application">
+    <module name="void" />
+    <working_directory value="$PROJECT_DIR$/app/run" />
+    <kind value="PACKAGE" />
+    <package value="github.com/slink-go/api-gateway/cmd/fiber" />
+    <directory value="$PROJECT_DIR$" />
+    <filePath value="$PROJECT_DIR$/api-gateway/cmd/fiber/main.go" />
+    <output_directory value="$PROJECT_DIR$/app/run" />
+    <method v="2" />
+  </configuration>
+</component>

@@ -13,7 +13,7 @@ import (
 )
 
 type serviceRegistry struct {
-	serviceDirectory *ringBuffers // TODO: implement periodic refresh | при обновлении собьётся ringBuffer; можно ли что-то с этим сделать? стоит ли это делать?
+	serviceDirectory *ringBuffers // TODO: при обновлении собьётся ringBuffer; можно ли что-то с этим сделать? стоит ли это делать?
 	clients          []discovery.Client
 	mutex            sync.RWMutex
 	logger           logging.Logger

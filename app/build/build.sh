@@ -14,26 +14,27 @@ cd ${DIR}/../..
 
 function build_backend() {
     docker build -f ${DIR}/Dockerfile-back                      \
-               --tag mvkvl/api-backend:${VERSION_SHORT}         \
+               --tag mvkvl/api-backend:${VERSION_SHORT}-$1      \
+               --build-arg "TYPE=$1"                            \
                --build-arg "GOLANG_VERSION=${GOLANG_VERSION}"   \
                --build-arg "UPX_VERSION=${UPX_VERSION}" .
 }
-function build_gw_fiber() {
-  docker build -f ${DIR}/Dockerfile-fiber                       \
-               --tag mvkvl/api-gateway-fiber:${VERSION_SHORT}   \
+function build_gw() {
+  docker build -f ${DIR}/Dockerfile-$1                          \
+               --tag mvkvl/api-gateway-$1:${VERSION_SHORT}      \
                --build-arg "GOLANG_VERSION=${GOLANG_VERSION}"   \
                --build-arg "UPX_VERSION=${UPX_VERSION}" .
 }
 
 if [[ "$1" == "-h" || "$1" == "help" ]]; then
-  echo "Usage: ./build.sh [ back | gin | fiber ]"
+  echo "Usage: ./build.sh [ back | gin ]"
   exit 1
-elif [ "$1" == "fiber" ]; then
-  build_gw_fiber
+elif [ "$1" == "gin" ]; then
+  build_gw "gin"
 elif [ "$1" == "back" ]; then
-  build_backend
+  build_backend "gin"
 else
-  build_gw_fiber
-  build_backend
+  build_gw "gin"
+  build_backend "gin"
 fi
 docker system prune -f

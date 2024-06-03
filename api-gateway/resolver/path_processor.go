@@ -3,6 +3,7 @@ package resolver
 import (
 	"fmt"
 	"github.com/slink-go/api-gateway/registry"
+	"net/url"
 	"strings"
 )
 
@@ -10,6 +11,7 @@ type PathProcessor interface {
 	Split(input string) ([]string, error)
 	Join(serviceUrl string, parts []string) (string, error)
 	UrlResolve(input string, resolver ServiceResolver) (string, error)
+	HostResolve(input string, resolver ServiceResolver) (string, error)
 }
 
 func NewPathProcessor() PathProcessor {
@@ -64,6 +66,18 @@ func (pp *pathProcessor) Join(serviceUrl string, parts []string) (string, error)
 		return serviceUrl, nil
 	}
 	return fmt.Sprintf("%s/%s", serviceUrl, strings.Join(parts[1:], "/")), nil
+}
+func (pp *pathProcessor) HostResolve(input string, resolver ServiceResolver) (string, error) {
+	parsed, err := url.Parse(input)
+	if err != nil {
+		return "", err
+	}
+	target, err := resolver.Resolve(parsed.Host)
+	if err != nil {
+		return "", err
+	}
+	resolved := target + parsed.Path
+	return resolved, nil
 }
 func (pp *pathProcessor) UrlResolve(input string, resolver ServiceResolver) (string, error) {
 	parts, err := pp.Split(input)

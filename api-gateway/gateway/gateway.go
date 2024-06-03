@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"github.com/slink-go/api-gateway/middleware/auth"
 	"github.com/slink-go/api-gateway/middleware/rate"
 	"github.com/slink-go/api-gateway/middleware/security"
 	"github.com/slink-go/api-gateway/proxy"
@@ -9,6 +10,7 @@ import (
 
 type Gateway interface {
 	WithAuthProvider(ap security.AuthProvider) Gateway
+	WithUserDetailsCache(cache auth.Cache) Gateway
 	WithUserDetailsProvider(udp security.UserDetailsProvider) Gateway
 	WithRateLimiter(limiter rate.Limiter) Gateway
 	WithReverseProxy(reverseProxy *proxy.ReverseProxy) Gateway

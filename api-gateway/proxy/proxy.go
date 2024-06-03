@@ -3,6 +3,7 @@ package proxy
 import (
 	"bytes"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/slink-go/api-gateway/resolver"
 	"github.com/slink-go/logging"
@@ -49,11 +50,10 @@ func (p *ReverseProxy) ResolveTarget(path string) (*url.URL, error) {
 	}
 	return resolved, nil
 }
-func (p *ReverseProxy) Proxy(address *url.URL) *httputil.ReverseProxy {
-
+func (p *ReverseProxy) Proxy(ctx *gin.Context, address *url.URL) *httputil.ReverseProxy {
 	pr := httputil.NewSingleHostReverseProxy(address)
-
 	pr.Director = func(request *http.Request) {
+		request.Header = ctx.Request.Header
 		request.Host = address.Host
 		request.URL.Scheme = address.Scheme
 		request.URL.Host = address.Host

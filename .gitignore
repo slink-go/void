@@ -8,3 +8,5 @@ app/run/gateway
 .idea/
 *_templ.go
 /app/test/
+app/run/gateway_gin
+app/run/backend_gin
