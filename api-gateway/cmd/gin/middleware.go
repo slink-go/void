@@ -7,11 +7,13 @@ import (
 	"github.com/palantir/stacktrace"
 	"github.com/slink-go/api-gateway/middleware/auth"
 	"github.com/slink-go/api-gateway/middleware/constants"
+	"github.com/slink-go/api-gateway/middleware/rate"
 	"github.com/slink-go/api-gateway/middleware/security"
 	"github.com/slink-go/api-gateway/proxy"
 	"github.com/slink-go/api-gateway/registry"
 	"github.com/slink-go/api-gateway/resolver"
 	"github.com/slink-go/logging"
+	ginlimiter "github.com/ulule/limiter/v3/drivers/middleware/gin"
 	"net/http"
 	"strings"
 	"time"
@@ -33,6 +35,12 @@ func headersCleaner(headers ...string) gin.HandlerFunc {
 		}
 	}
 }
+
+//func realIp() gin.HandlerFunc {
+//	return func(ctx *gin.Context) {
+//		ctx.Header("X-Real-Ip", ctx.ClientIP())
+//	}
+//}
 
 // proxyTargetResolver - resolve request URL to target service URL
 func proxyTargetResolver(reverseProxy *proxy.ReverseProxy) gin.HandlerFunc {
@@ -192,6 +200,42 @@ func timeoutMiddleware(tm time.Duration) gin.HandlerFunc {
 			c.Next()
 		}),
 	)
+}
+
+func rateLimit(lim rate.Limiter) gin.HandlerFunc {
+	if lim == nil {
+		return func(context *gin.Context) {
+			context.Next()
+		}
+	}
+	return func(ctx *gin.Context) {
+		lmtr := lim.Get(ctx.Request.URL.String())
+		mw := ginlimiter.NewMiddleware(
+			lmtr,
+			ginlimiter.WithLimitReachedHandler(func(c *gin.Context) {
+				key := lmtr.GetIPKey(c.Request)
+				logging.GetLogger("global-rate-limiter").Warning("key: %s", key)
+				ctx, err := lmtr.Peek(c, key)
+				var msg string
+				if err != nil {
+					msg = "Too many requests.\n"
+				} else {
+					wait := ctx.Reset - time.Now().Unix()
+					msg = fmt.Sprintf("Too many requests. Try again in %d seconds.\n", wait)
+				}
+				c.Writer.WriteHeader(http.StatusTooManyRequests)
+				c.Writer.Write([]byte(msg))
+				c.Abort()
+			}),
+			//ginlimiter.WithKeyGetter(rateLimitKeyGetter),
+		)
+		mw(ctx)
+	}
+}
+
+func rateLimitKeyGetter(ctx *gin.Context) string {
+	// TODO: implement rate limit key for gin.Context
+	return "*"
 }
 
 //func circuitBreakerMiddleware()

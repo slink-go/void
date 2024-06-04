@@ -36,7 +36,7 @@ func main() {
 
 	var mPort string
 	if monPort := int(env.Int64OrDefault(env.MonitoringPort, 0)); monPort > 0 {
-		mPort = fmt.Sprintf("127.0.0.1:%d", monPort)
+		mPort = fmt.Sprintf(":%d", monPort)
 	}
 
 	ec := createEurekaClient()
@@ -48,29 +48,14 @@ func main() {
 }
 
 func startGateway(proxyAddr, monitoringAddr string, dc ...discovery.Client) chan struct{} {
-
-	limiter := rate.NewLimiter(int(env.Int64OrDefault(env.RateLimitRPM, 0)))
 	reg := registry.NewServiceRegistry(dc...)
-
 	res := resolver.NewServiceResolver(reg)
 	proc := resolver.NewPathProcessor()
-
-	ap := security.NewAuthChain().
-		WithProvider(security.NewHttpHeaderAuthProvider()).
-		WithProvider(security.NewCookieAuthProvider())
-
-	udp := security.NewTokenBasedUserDetailsProvider().
-		WithAuthProvider(ap).
-		WithServiceResolver(res).
-		WithPathProcessor(proc).
-		WithMethod(env.StringOrDefault(env.AuthMethod, "GET")).
-		WithAuthEndpoint(env.StringOrDefault(env.AuthEndpoint, "")).
-		WithResponseParser(security.NewResponseParser().LoadMapping(os.Getenv(env.AuthResponseMappingFilePath)))
-
-	pr := proxy.CreateReverseProxy().WithServiceResolver(res).WithPathProcessor(proc)
-
+	ap := createAuthChain()
+	udp := createUserDetailsProvider(ap, res, proc)
+	pr := createReverseProxy(res, proc)
+	limiter := createRateLimiter()
 	quitChn := make(chan struct{})
-
 	go NewGinBasedGateway().
 		WithAuthProvider(ap).
 		WithUserDetailsCache(auth.NewUserDetailsCache(env.DurationOrDefault(env.AuthCacheTTL, time.Second*30))).
@@ -80,9 +65,7 @@ func startGateway(proxyAddr, monitoringAddr string, dc ...discovery.Client) chan
 		WithRegistry(reg).
 		WithQuitChn(quitChn).
 		Serve(proxyAddr, monitoringAddr)
-
 	return quitChn
-
 }
 
 func createEurekaClient() discovery.Client {
@@ -144,4 +127,41 @@ func createStaticClient() discovery.Client {
 	}
 	logging.GetLogger("main").Info("started static registry")
 	return v
+}
+
+func createAuthChain() security.AuthProvider {
+	return security.NewAuthChain().
+		WithProvider(security.NewHttpHeaderAuthProvider()).
+		WithProvider(security.NewCookieAuthProvider())
+}
+func createUserDetailsProvider(ap security.AuthProvider, res resolver.ServiceResolver, proc resolver.PathProcessor) security.UserDetailsProvider {
+	return security.NewTokenBasedUserDetailsProvider().
+		WithAuthProvider(ap).
+		WithServiceResolver(res).
+		WithPathProcessor(proc).
+		WithMethod(env.StringOrDefault(env.AuthMethod, "GET")).
+		WithAuthEndpoint(env.StringOrDefault(env.AuthEndpoint, "")).
+		WithResponseParser(security.NewResponseParser().LoadMapping(os.Getenv(env.AuthResponseMappingFilePath)))
+}
+func createReverseProxy(res resolver.ServiceResolver, proc resolver.PathProcessor) *proxy.ReverseProxy {
+	return proxy.CreateReverseProxy().WithServiceResolver(res).WithPathProcessor(proc)
+}
+func createRateLimiter() rate.Limiter {
+	limiter := rate.NewLimiter(
+		rate.WithLimit(env.Int64OrDefault(env.LimiterRateLimit, 10)),
+		rate.WithPeriod(env.DurationOrDefault(env.LimiterPeriod, time.Minute)),
+		// TODO: implement configurable custom limits
+		rate.WithCustom(
+			rate.WithCustomPattern("*/api/*"),
+			rate.WithCustomLimit(5),
+			rate.WithCustomPeriod(time.Second*5),
+		),
+		rate.WithCustom(
+			rate.WithCustomPattern("*/api/test/*"),
+			rate.WithCustomLimit(15),
+			rate.WithCustomPeriod(time.Second),
+		),
+		rate.WithInMemStore(),
+	)
+	return limiter
 }

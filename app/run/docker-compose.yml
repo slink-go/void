@@ -21,8 +21,6 @@ x-common: &common
 x-backend: &backend
     <<: *common
     image: slinkgo/test-backend
-    env_file:
-      - .env.backend
 
 x-discovery: &discovery
   EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://eureka:eureka@eureka:9992/eureka"
@@ -41,6 +39,7 @@ services:
       - "127.0.0.1:8772:8082"
     env_file:
       - .env.disco
+
   void:
     deploy:
       resources:
@@ -54,76 +53,103 @@ services:
     ports:
       - "3021:3000"
       - "3022:3001"
+    depends_on:
+      - disco
+      - eureka
     <<: *basic-log
-
 
   backend-a1:
     <<: *backend
     container_name: backend-a1
+    env_file:
+      - .env.backend.disco
     environment:
       - "SERVICE_NAME=service-a"
       - "INSTANCE_ID=1"
     ports:
       - "3111:3000"
       - "3112:3001"
+    depends_on:
+      - void
   backend-a2:
     <<: *backend
     container_name: backend-a2
+    env_file:
+      - .env.backend.disco
     environment:
       - "SERVICE_NAME=service-a"
       - "INSTANCE_ID=2"
     ports:
       - "3121:3000"
       - "3122:3001"
+    depends_on:
+      - backend-a1
   backend-a3:
     <<: *backend
     container_name: backend-a3
+    env_file:
+      - .env.backend.disco
     environment:
       - "SERVICE_NAME=service-a"
       - "INSTANCE_ID=3"
     ports:
       - "3131:3000"
       - "3132:3001"
+    depends_on:
+      - backend-a2
   backend-a4:
     <<: *backend
     container_name: backend-a4
+    env_file:
+      - .env.backend.disco
     environment:
       - "SERVICE_NAME=service-a"
       - "INSTANCE_ID=4"
     ports:
       - "3141:3000"
       - "3142:3001"
+    depends_on:
+      - backend-a3
+
   backend-b1:
     <<: *backend
     container_name: backend-b1
+    env_file:
+      - .env.backend.eureka
     environment:
       - "SERVICE_NAME=service-b"
       - "INSTANCE_ID=1"
     ports:
       - "3211:3000"
       - "3212:3001"
+    depends_on:
+      - backend-a4
+
   backend-b2:
     <<: *backend
     container_name: backend-b2
+    env_file:
+      - .env.backend.eureka
     environment:
       - "SERVICE_NAME=service-b"
       - "INSTANCE_ID=2"
     ports:
       - "3221:3000"
       - "3222:3001"
+    depends_on:
+      - backend-b1
 
   eureka:
     hostname: eureka
     image: "mvkvl/eureka-server"
-#    image: "mvkvl/eureka:"
     container_name: eureka
     ports:
-      - "8761:8761"
+      - "127.0.0.1:8761:8761"
     environment:
-#      LOGGING_LEVEL_ROOT: DEBUG
-      SERVER_PORT: 9992
-      MANAGEMENT_SERVER_PORT: 9000
+      SERVER_PORT: 8761
       SPRING_SECURITY_USER_NAME: eureka
       SPRING_SECURITY_USER_PASSWORD: eureka
       JAVA_OPTS: -Xmx512m -Xms128m -XX:MaxMetaspaceSize=128m -XX:ReservedCodeCacheSize=128m -server -XX:+OptimizeStringConcat -Dfile.encoding=UTF-8 -XX:+ExitOnOutOfMemoryError -XX:+CrashOnOutOfMemoryError --add-opens=java.base/java.net=ALL-UNNAMED
-    <<: [ *common]
+    restart: unless-stopped
+    stop_grace_period: "10s"
+    <<: *basic-log

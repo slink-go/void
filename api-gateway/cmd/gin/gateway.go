@@ -25,8 +25,8 @@ type GinBasedGateway struct {
 	authCache           auth.Cache
 	reverseProxy        *proxy.ReverseProxy
 	registry            registry.ServiceRegistry
-
-	quitChn chan struct{}
+	limiter             rate.Limiter
+	quitChn             chan struct{}
 }
 
 //region - initializers
@@ -53,7 +53,7 @@ func (g *GinBasedGateway) WithReverseProxy(reverseProxy *proxy.ReverseProxy) gat
 	g.reverseProxy = reverseProxy
 	return g
 }
-func (g *GinBasedGateway) WithRateLimiter(limit rate.Limiter) gateway.Gateway {
+func (g *GinBasedGateway) WithRateLimiter(limiter rate.Limiter) gateway.Gateway {
 	//limiterConfig := limiter.Config{
 	//	Max:                    limit.GetLimit(),
 	//	Expiration:             time.Minute,
@@ -73,6 +73,7 @@ func (g *GinBasedGateway) WithRateLimiter(limit rate.Limiter) gateway.Gateway {
 	//	},
 	//}
 	//g.limiter = limiter.New(limiterConfig)
+	g.limiter = limiter
 	return g
 }
 func (g *GinBasedGateway) WithRegistry(registry registry.ServiceRegistry) gateway.Gateway {
@@ -106,10 +107,10 @@ func (g *GinBasedGateway) Serve(addresses ...string) {
 		authEnabled := env.BoolOrDefault(env.AuthEnabled, false)
 		NewService("proxy").
 			WithPrometheus().
+			WithMiddleware(rateLimit(g.limiter)).
 			WithMiddleware(helmet.Default()). // TODO: custom helmet config
 			//WithMiddleware(csrf.New()). // TODO: implement it for Gin (?)
 			//WithMiddleware(timeoutMiddleware(100 * time.Millisecond)). // TODO: skip paths
-			//WithMiddleware(rateLimiter()).
 			WithMiddleware(proxyTargetResolver(g.reverseProxy)).
 			//WithMiddleware(circuitBreaker()).
 			WithMiddleware(headersCleaner()). // cleanup incoming headers
@@ -162,8 +163,8 @@ func (g *GinBasedGateway) proxyHandler(ctx *gin.Context) {
 
 	g.logger.Trace("proxying %s", proxyTarget)
 
-	ctx.Set("X-Forwarded-For", ctx.RemoteIP())
-	ctx.Set("X-Real-Ip", ctx.ClientIP())
+	//ctx.Set("X-Forwarded-For", ctx.RemoteIP())
+	//ctx.Set("X-Real-Ip", ctx.ClientIP())
 
 	g.reverseProxy.Proxy(ctx, proxyTarget).ServeHTTP(ctx.Writer, ctx.Request)
 

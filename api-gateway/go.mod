@@ -19,7 +19,9 @@ require (
 	github.com/slink-go/logger v0.0.1
 	github.com/slink-go/logging v0.0.2
 	github.com/stretchr/testify v1.9.0
+	github.com/ulule/limiter/v3 v3.11.2
 	github.com/xhit/go-str2duration/v2 v2.1.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -47,6 +49,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.2 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_model v0.4.0 // indirect
 	github.com/prometheus/common v0.44.0 // indirect
@@ -64,5 +67,4 @@ require (
 	golang.org/x/sys v0.20.0 // indirect
 	golang.org/x/text v0.15.0 // indirect
 	google.golang.org/protobuf v1.34.1 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

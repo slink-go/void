@@ -72,6 +72,14 @@
 - latency-middleware::finish -> set custom metrics
 ```
 
+## Security
+- [!!!] support "trusted proxies" for rate limiter, reverse proxy ("trusted proxy middleware") (see [here](https://adam-p.ca/blog/2022/03/x-forwarded-for/#thoughts-on-overwriting-the-xff-header))
+- Good example of "detecting" client address: [envoy xff](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/headers#x-forwarded-for)
+  - use_remote_address = { true | false }
+  - xff_num_trusted_hops = N
+  - trusted proxies (?)
+
+
 ### Useful links
 - WS Proxy: 	
    - https://stackoverflow.com/questions/73187877/how-do-i-implement-a-wss-reverse-proxy-as-a-gin-route
