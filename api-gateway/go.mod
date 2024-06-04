@@ -16,7 +16,6 @@ require (
 	github.com/slink-go/disco-go v0.0.18
 	github.com/slink-go/disco/common v0.0.8
 	github.com/slink-go/go-eureka-client v1.1.1
-	github.com/slink-go/logger v0.0.1
 	github.com/slink-go/logging v0.0.2
 	github.com/stretchr/testify v1.9.0
 	github.com/ulule/limiter/v3 v3.11.2
@@ -57,6 +56,7 @@ require (
 	github.com/rs/zerolog v1.32.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/slink-go/httpclient v0.0.8 // indirect
+	github.com/slink-go/logger v0.0.1 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.12 // indirect
 	go.uber.org/goleak v1.3.0 // indirect

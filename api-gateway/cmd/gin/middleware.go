@@ -19,6 +19,28 @@ import (
 	"time"
 )
 
+func customLogger() gin.HandlerFunc {
+	logger := logging.GetLogger("gin")
+	return func(c *gin.Context) {
+		start := time.Now()
+		c.Next()
+		end := time.Now()
+		latency := end.Sub(start)
+		if latency > time.Minute {
+			latency = latency.Truncate(time.Minute)
+		} else {
+			latency = latency.Truncate(time.Microsecond)
+		}
+		logger.Info("%15v %10v %7v %10v %v",
+			c.ClientIP(),
+			latency,
+			c.Writer.Status(),
+			c.Request.Method,
+			c.Request.URL,
+		)
+	}
+}
+
 // headersCleaner - cleanup incoming headers to prevent security issues
 func headersCleaner(headers ...string) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
@@ -208,6 +230,7 @@ func rateLimit(lim rate.Limiter) gin.HandlerFunc {
 			context.Next()
 		}
 	}
+	logger := logging.GetLogger("rate-limiter")
 	return func(ctx *gin.Context) {
 		lmtr := lim.Get(ctx.Request.URL.Path)
 		mw := ginlimiter.NewMiddleware(
@@ -215,7 +238,7 @@ func rateLimit(lim rate.Limiter) gin.HandlerFunc {
 			ginlimiter.WithKeyGetter(rateLimitKeyGetter),
 			ginlimiter.WithLimitReachedHandler(func(c *gin.Context) {
 				key := rateLimitKeyGetter(c)
-				logging.GetLogger("rate-limiter").Warning("key: %s", key)
+				logger.Trace("key: %s", key)
 				ctx, err := lmtr.Peek(c, key)
 				var msg string
 				if err != nil {

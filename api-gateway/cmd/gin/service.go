@@ -5,7 +5,6 @@ import (
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/slink-go/logger"
 	"github.com/slink-go/logging"
 	"log"
 	"net/http"
@@ -17,7 +16,7 @@ import (
 
 func NewService(name string) *Service {
 	return &Service{
-		engine: gin.Default(),
+		engine: gin.New(), //gin.Default(),
 		name:   name,
 		logger: logging.GetLogger(name),
 	}
@@ -44,7 +43,7 @@ func (s *Service) Run(address string) {
 			s.logger.Panic("[service][%s] listen: %s\n", address, err)
 		}
 	}()
-	logger.Info("start %s service on %s", s.name, address)
+	s.logger.Info("start %s service on %s", s.name, address)
 	s.handleBreak(server)
 }
 

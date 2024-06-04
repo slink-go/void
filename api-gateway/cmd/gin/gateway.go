@@ -107,6 +107,7 @@ func (g *GinBasedGateway) Serve(addresses ...string) {
 		authEnabled := env.BoolOrDefault(env.AuthEnabled, false)
 		NewService("proxy").
 			WithPrometheus().
+			WithMiddleware(customLogger()).
 			WithMiddleware(rateLimit(g.limiter)).
 			WithMiddleware(helmet.Default()). // TODO: custom helmet config
 			//WithMiddleware(csrf.New()). // TODO: implement it for Gin (?)
