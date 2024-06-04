@@ -152,14 +152,14 @@ func createRateLimiter() rate.Limiter {
 		rate.WithPeriod(env.DurationOrDefault(env.LimiterPeriod, time.Minute)),
 		// TODO: implement configurable custom limits
 		rate.WithCustom(
-			rate.WithCustomPattern("*/api/*"),
-			rate.WithCustomLimit(5),
-			rate.WithCustomPeriod(time.Second*5),
+			rate.WithCustomPattern("*/service-a/*"),
+			rate.WithCustomLimit(1),
+			rate.WithCustomPeriod(5*time.Second),
 		),
 		rate.WithCustom(
-			rate.WithCustomPattern("*/api/test/*"),
-			rate.WithCustomLimit(15),
-			rate.WithCustomPeriod(time.Second),
+			rate.WithCustomPattern("*/service-b/*"),
+			rate.WithCustomLimit(5),
+			rate.WithCustomPeriod(30*time.Second),
 		),
 		rate.WithInMemStore(),
 	)

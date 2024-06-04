@@ -209,12 +209,13 @@ func rateLimit(lim rate.Limiter) gin.HandlerFunc {
 		}
 	}
 	return func(ctx *gin.Context) {
-		lmtr := lim.Get(ctx.Request.URL.String())
+		lmtr := lim.Get(ctx.Request.URL.Path)
 		mw := ginlimiter.NewMiddleware(
 			lmtr,
+			ginlimiter.WithKeyGetter(rateLimitKeyGetter),
 			ginlimiter.WithLimitReachedHandler(func(c *gin.Context) {
-				key := lmtr.GetIPKey(c.Request)
-				logging.GetLogger("global-rate-limiter").Warning("key: %s", key)
+				key := rateLimitKeyGetter(c)
+				logging.GetLogger("rate-limiter").Warning("key: %s", key)
 				ctx, err := lmtr.Peek(c, key)
 				var msg string
 				if err != nil {
@@ -227,7 +228,6 @@ func rateLimit(lim rate.Limiter) gin.HandlerFunc {
 				c.Writer.Write([]byte(msg))
 				c.Abort()
 			}),
-			//ginlimiter.WithKeyGetter(rateLimitKeyGetter),
 		)
 		mw(ctx)
 	}
@@ -235,7 +235,8 @@ func rateLimit(lim rate.Limiter) gin.HandlerFunc {
 
 func rateLimitKeyGetter(ctx *gin.Context) string {
 	// TODO: implement rate limit key for gin.Context
-	return "*"
+	realIp := ctx.ClientIP()
+	return realIp + ":" + ctx.Request.URL.Path
 }
 
 //func circuitBreakerMiddleware()

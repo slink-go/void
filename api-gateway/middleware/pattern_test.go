@@ -10,15 +10,27 @@ func TestPatternMatch(t *testing.T) {
 		result  bool
 	}{
 		{
-			"test 1",
-			"http://host/api/service-a/test",
+			"test-1",
+			"/api/service-a/test",
 			"*/service-a/*",
 			true,
 		},
 		{
-			"test 2",
-			"http://host/api/service-a/test",
+			"test-2",
+			"/api/service-a/test/path",
 			"*/api/*",
+			true,
+		},
+		{
+			"test-3",
+			"/service-a/api/test/path",
+			"/service-a/api/*",
+			true,
+		},
+		{
+			"test-4",
+			"/api/service-a/test",
+			"*/service-a/*",
 			true,
 		},
 	}

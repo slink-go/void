@@ -132,18 +132,18 @@ type limiterImpl struct {
 	logger logging.Logger
 }
 
-func (l *limiterImpl) Get(url string) *limiter.Limiter {
+func (l *limiterImpl) Get(path string) *limiter.Limiter {
 	if l.store == nil {
 		l.logger.Error("rate limit store not set")
 		return nil
 	}
-	rate := l.getRate(url)
+	rate := l.getRate(path)
 	lm := limiter.New(l.store, rate)
 	return lm
 }
 
-func (l *limiterImpl) getRate(url string) limiter.Rate {
-	if rate, ok := l.getCustomRate(url); ok {
+func (l *limiterImpl) getRate(path string) limiter.Rate {
+	if rate, ok := l.getCustomRate(path); ok {
 		return rate
 	} else {
 		return limiter.Rate{
@@ -152,9 +152,9 @@ func (l *limiterImpl) getRate(url string) limiter.Rate {
 		}
 	}
 }
-func (l *limiterImpl) getCustomRate(url string) (limiter.Rate, bool) {
+func (l *limiterImpl) getCustomRate(path string) (limiter.Rate, bool) {
 	for _, crl := range l.custom {
-		if middleware.Match(url, crl.pattern) {
+		if middleware.Match(path, crl.pattern) {
 			return limiter.Rate{
 				Period: crl.period,
 				Limit:  crl.limit,
