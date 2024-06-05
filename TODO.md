@@ -1,66 +1,60 @@
 # API Gateway: TODO
 
 ### Base
-1. *~~Reverse proxy~~*
-2. *~~Target resolver~~*
-3. *~~Context setup~~*
-4. Rate limit
-5. *~~Log request~~*
-6. *~~Static resolver (+ load balancing)~~*
-7. *~~Eureka service resolver (+ load balancing)~~*
-8. *~~Disco service resolver~~*
-9. K8S service resolver
-10. ~~*Multiple service resolvers support (static + eureka + disco)*~~
-11. ~~*Cookie AuthToken support*~~
-12. ~~*AuthProvider chaining ( http header -> cookie -> ... )*~~
-13. Fallback (to default backend service) (?)
-14. Profiling
-15. Configuration & feature flags
-16. Handle dead peers (connection refused)
-17. Remote peers filter (?) (by meta, by status, ...)
-18. ~~*Static resolver config from file*~~
-19. Client: advertise custom address / port (for specific deployment cases) - using META
-20. advertise app info url (?)
-21. gRPC gateway 
-22. Pattern matcher
-23. CSRF (?)
-24. Correct errors handling
+1. [x] Reverse proxy
+2. [x] Target resolver
+3. [x] Context setup
+4. [x] Rate limit
+5. [x] Log request
+6. [x] Static resolver (+ load balancing)
+7. [x] Eureka service resolver (+ load balancing)
+8. [x] Disco service resolver
+9. [ ] K8S service resolver
+10. [x] Multiple service resolvers support (static + eureka + disco)
+11. [x] Cookie AuthToken support
+12. [x] AuthProvider chaining ( http header -> cookie -> ... )
+13. [ ] ~~Fallback (to default backend service) (?)~~
+14. [ ] Profiling
+15. [ ] Configuration & feature flags
+16. [ ] Handle dead peers (connection refused)
+17. [ ] Remote peers filter (?) (by meta, by status, ...)
+18. [x] Static resolver config from file
+19. [ ] Client: advertise custom address / port (for specific deployment cases) - using META
+20. [ ] advertise app info url (?)
+21. [ ] gRPC gateway 
+22. [x] (ENHANCE?) Pattern matcher
+23. [ ] CSRF (?)
+24. [ ] Correct errors handling
 
 
 ### Middleware
-1. ~~*Auth check*~~
-    - clean on start
-    - execute
-    - clean on finish
-2. ~~*rest-auth-provider*~~
-3. Timeout support (except sse/ws)
-4. Metrics / latency measurement
-5. Bulkhead / circuit breaker / etc
-6. Limiter config
-7. Auth cache middleware
-   + ~~*inmem*~~
-   - redis
-8. Rate Limiter
-   - waiting
-   - denying
-   - rate limiter config from discovery peer meta
-9. Cookie Auth: configurable cookie name
-10. instead of HostResolve use disco-client resolving capabilities (falling back to HostResolve)
+1. [x] Auth check
+2. [x] rest-auth-provider
+3. [ ] Timeout support (except sse/ws)
+4. [ ] Metrics / latency measurement
+5. [ ] Bulkhead / circuit breaker / etc
+6. [ ] Limiter config
+7. [ ] Auth cache middleware
+   [x] inmem
+   [ ] redis
+8. [x] Rate Limiter (DELAY, DENY)
+9. [ ] Cookie Auth: configurable cookie name
+10. [ ] Use disco-client resolving capabilities (falling back to HostResolve)
 
 ### URL Pattern Matching
-1. auth skip urls
-2. timeout skip urls
-3. rate limit skip urls
+1. [ ] auth skip urls
+2. [ ] timeout skip urls
+3. [ ] rate limit: custom config
 
 ### Procedure
 ```text
 - latency-middleware::start
-- rate-limiter-middleware
++ rate-limiter-middleware
 + proxy-target-resolver-middleware -> url -> proxy-url : (considering circuit breaker)
 - circuit breaker middleware
 + headers-cleanup-middleware::start
 + auth-resolver-middleware 	-> 	header/cookie -> ctx.Set(Auth) => check token validity
-- auth-cache-middleware -> Auth -> ctx.Set(UserDetails)
++ auth-cache-middleware -> Auth -> ctx.Set(UserDetails)
 + auth-provider-middleware	->	get user details from remote peer
     + token exchange (in case of correct Auth) -> ctx.Set(UserDetails)
     - backoff

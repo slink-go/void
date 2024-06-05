@@ -236,7 +236,7 @@ func timeouter(tm time.Duration) gin.HandlerFunc {
 // region - rate limiter
 
 func rateLimiter(lim rate.Limiter) gin.HandlerFunc {
-	if lim == nil {
+	if lim == nil || lim.Mode() == rate.LimiterModeOff {
 		return func(context *gin.Context) {
 			context.Next()
 		}
@@ -248,23 +248,12 @@ func rateLimiter(lim rate.Limiter) gin.HandlerFunc {
 			lmtr,
 			ginlimiter.WithKeyGetter(rateLimitKeyGetter),
 			ginlimiter.WithLimitReachedHandler(func(c *gin.Context) {
-				if lim.Mode() == rate.LimiterModeDenying {
-					c.Writer.WriteHeader(http.StatusTooManyRequests)
-					wait, err := getWait(lmtr, c)
-					if err != nil {
-						_, _ = c.Writer.Write([]byte("Too many requests.\n"))
-					} else {
-						_, _ = c.Writer.Write([]byte(fmt.Sprintf("Too many requests. Try again in %d seconds.\n", wait)))
-					}
-					c.Abort()
-				} else {
-					wait, err := getWait(lmtr, c)
-					if err != nil {
-						_, _ = c.Writer.Write([]byte("Too many requests.\n"))
-						c.Abort()
-					}
-					timer := time.NewTimer(time.Duration(wait) * time.Second)
-					<-timer.C
+				switch lim.Mode() {
+				case rate.LimiterModeDeny:
+					rateLimitDeny(lmtr, c)
+				case rate.LimiterModeDelay:
+					rateLimitDelay(lmtr, c)
+				default:
 					c.Next()
 				}
 			}),
@@ -273,6 +262,26 @@ func rateLimiter(lim rate.Limiter) gin.HandlerFunc {
 	}
 }
 
+func rateLimitDeny(lim *limiter.Limiter, ctx *gin.Context) {
+	ctx.Writer.WriteHeader(http.StatusTooManyRequests)
+	wait, err := getWait(lim, ctx)
+	if err != nil {
+		_, _ = ctx.Writer.Write([]byte("Too many requests.\n"))
+	} else {
+		_, _ = ctx.Writer.Write([]byte(fmt.Sprintf("Too many requests. Try again in %d seconds.\n", wait)))
+	}
+	ctx.Abort()
+}
+func rateLimitDelay(lim *limiter.Limiter, ctx *gin.Context) {
+	wait, err := getWait(lim, ctx)
+	if err != nil {
+		_, _ = ctx.Writer.Write([]byte("Too many requests.\n"))
+		ctx.Abort()
+	}
+	timer := time.NewTimer(time.Duration(wait) * time.Second)
+	<-timer.C
+	ctx.Next()
+}
 func getWait(lmtr *limiter.Limiter, c *gin.Context) (int64, error) {
 	logger := logging.GetLogger("rate-limiter")
 	key := rateLimitKeyGetter(c)

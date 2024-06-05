@@ -22,20 +22,23 @@ type LimiterMode int
 
 const (
 	LimiterModeUnknown LimiterMode = iota
-	LimiterModeDenying
-	LimiterModeWaiting
+	LimiterModeOff
+	LimiterModeDeny
+	LimiterModeDelay
 )
 
 var (
 	modeTypeNames = map[LimiterMode]string{
 		LimiterModeUnknown: "",
-		LimiterModeDenying: "DENY",
-		LimiterModeWaiting: "DELAY",
+		LimiterModeOff:     "OFF",
+		LimiterModeDeny:    "DENY",
+		LimiterModeDelay:   "DELAY",
 	}
 	modeTypeValues = map[string]LimiterMode{
 		"":      LimiterModeUnknown,
-		"DENY":  LimiterModeDenying,
-		"DELAY": LimiterModeWaiting,
+		"OFF":   LimiterModeOff,
+		"DENY":  LimiterModeDeny,
+		"DELAY": LimiterModeDelay,
 	}
 )
 
@@ -136,7 +139,7 @@ func WithCustom(options ...CustomLimitOption) Option {
 func WithMode(value string) Option {
 	m := parseLimiterMode(value)
 	if m == LimiterModeUnknown {
-		m = LimiterModeDenying
+		m = LimiterModeOff
 	}
 	return &modeOption{
 		value: m,
