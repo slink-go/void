@@ -31,7 +31,8 @@ const (
 	RegistryRefreshInitialDelay = "REGISTRY_REFRESH_INITIAL_DELAY"
 	RegistryRefreshInterval     = "REGISTRY_REFRESH_INTERVAL" // default 60s
 
-	LimiterRateLimit              = "LIMITER_RATE_LIMIT"
+	LimiterLimit                  = "LIMITER_LIMIT"
 	LimiterPeriod                 = "LIMITER_PERIOD"
+	LimiterMode                   = "LIMITER_MODE"
 	RateLimitCacheCleanupInterval = "RATE_LIMIT_CACHE_CLEANUP_INTERVAL"
 )

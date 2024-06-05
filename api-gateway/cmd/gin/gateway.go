@@ -107,11 +107,12 @@ func (g *GinBasedGateway) Serve(addresses ...string) {
 		authEnabled := env.BoolOrDefault(env.AuthEnabled, false)
 		NewService("proxy").
 			WithPrometheus().
+			WithMiddleware(gin.Recovery()).
 			WithMiddleware(customLogger()).
-			WithMiddleware(rateLimit(g.limiter)).
+			WithMiddleware(rateLimiter(g.limiter)).
 			WithMiddleware(helmet.Default()). // TODO: custom helmet config
 			//WithMiddleware(csrf.New()). // TODO: implement it for Gin (?)
-			//WithMiddleware(timeoutMiddleware(100 * time.Millisecond)). // TODO: skip paths
+			//WithMiddleware(timeouter(100 * time.Millisecond)). // TODO: skip paths
 			WithMiddleware(proxyTargetResolver(g.reverseProxy)).
 			//WithMiddleware(circuitBreaker()).
 			WithMiddleware(headersCleaner()). // cleanup incoming headers

@@ -17,4 +17,5 @@ const (
 	CtxLocale      = "Ctx-Locale"
 	CtxProxyTarget = "Ctx-Proxy-Target"
 	CtxError       = "Ctx-Error"
+	CtxRateLimiter = "Ctx-Rate-Limiter"
 )

@@ -13,6 +13,7 @@ import (
 	"github.com/slink-go/api-gateway/registry"
 	"github.com/slink-go/api-gateway/resolver"
 	"github.com/slink-go/logging"
+	"github.com/ulule/limiter/v3"
 	ginlimiter "github.com/ulule/limiter/v3/drivers/middleware/gin"
 	"net/http"
 	"strings"
@@ -212,8 +213,8 @@ func contextConfigurator() gin.HandlerFunc {
 	}
 }
 
-// timeoutMiddleware - ...
-func timeoutMiddleware(tm time.Duration) gin.HandlerFunc {
+// timeouter - ...
+func timeouter(tm time.Duration) gin.HandlerFunc {
 	logger := logging.GetLogger("timeout-middleware")
 	return timeout.New(
 		timeout.WithTimeout(tm),
@@ -224,42 +225,69 @@ func timeoutMiddleware(tm time.Duration) gin.HandlerFunc {
 	)
 }
 
-func rateLimit(lim rate.Limiter) gin.HandlerFunc {
+func rateLimiter(lim rate.Limiter) gin.HandlerFunc {
 	if lim == nil {
 		return func(context *gin.Context) {
 			context.Next()
 		}
 	}
-	logger := logging.GetLogger("rate-limiter")
 	return func(ctx *gin.Context) {
+		ctx.Set(constants.CtxRateLimiter, lim)
 		lmtr := lim.Get(ctx.Request.URL.Path)
 		mw := ginlimiter.NewMiddleware(
 			lmtr,
 			ginlimiter.WithKeyGetter(rateLimitKeyGetter),
 			ginlimiter.WithLimitReachedHandler(func(c *gin.Context) {
-				key := rateLimitKeyGetter(c)
-				logger.Trace("key: %s", key)
-				ctx, err := lmtr.Peek(c, key)
-				var msg string
-				if err != nil {
-					msg = "Too many requests.\n"
+				if lim.Mode() == rate.LimiterModeDenying {
+					c.Writer.WriteHeader(http.StatusTooManyRequests)
+					wait, err := getWait(lmtr, c)
+					if err != nil {
+						c.Writer.Write([]byte("Too many requests.\n"))
+					} else {
+						c.Writer.Write([]byte(fmt.Sprintf("Too many requests. Try again in %d seconds.\n", wait)))
+					}
+					c.Abort()
 				} else {
-					wait := ctx.Reset - time.Now().Unix()
-					msg = fmt.Sprintf("Too many requests. Try again in %d seconds.\n", wait)
+					wait, err := getWait(lmtr, c)
+					if err != nil {
+						c.Writer.Write([]byte("Too many requests.\n"))
+						c.Abort()
+					}
+					timer := time.NewTimer(time.Duration(wait) * time.Second)
+					<-timer.C
+					c.Next()
 				}
-				c.Writer.WriteHeader(http.StatusTooManyRequests)
-				c.Writer.Write([]byte(msg))
-				c.Abort()
 			}),
 		)
 		mw(ctx)
 	}
 }
 
+func getWait(lmtr *limiter.Limiter, c *gin.Context) (int64, error) {
+	logger := logging.GetLogger("rate-limiter")
+	key := rateLimitKeyGetter(c)
+	ctx, err := lmtr.Peek(c, key)
+	if err != nil {
+		return 0, err
+	}
+	wait := ctx.Reset - time.Now().Unix()
+	if wait == 0 {
+		wait = 1
+	}
+	logger.Trace("key: %s, wait: %d", key, wait)
+	return wait, nil
+}
 func rateLimitKeyGetter(ctx *gin.Context) string {
-	// TODO: implement rate limit key for gin.Context
 	realIp := ctx.ClientIP()
-	return realIp + ":" + ctx.Request.URL.Path
+	v, ok := ctx.Get(constants.CtxRateLimiter)
+	if !ok {
+		return realIp
+	}
+	lim, ok := v.(rate.Limiter)
+	if !ok {
+		return realIp
+	}
+	return realIp + ":" + lim.KeyForPath(ctx.Request.URL.Path)
 }
 
 //func circuitBreakerMiddleware()

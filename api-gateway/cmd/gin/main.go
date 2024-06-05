@@ -148,19 +148,20 @@ func createReverseProxy(res resolver.ServiceResolver, proc resolver.PathProcesso
 }
 func createRateLimiter() rate.Limiter {
 	limiter := rate.NewLimiter(
-		rate.WithLimit(env.Int64OrDefault(env.LimiterRateLimit, 10)),
+		rate.WithLimit(env.Int64OrDefault(env.LimiterLimit, 10)),
 		rate.WithPeriod(env.DurationOrDefault(env.LimiterPeriod, time.Minute)),
+		rate.WithMode(env.StringOrDefault(env.LimiterMode, "")),
 		// TODO: implement configurable custom limits
 		rate.WithCustom(
 			rate.WithCustomPattern("*/service-a/*"),
-			rate.WithCustomLimit(1),
-			rate.WithCustomPeriod(5*time.Second),
+			rate.WithCustomLimit(10),
+			rate.WithCustomPeriod(10*time.Second),
 		),
-		rate.WithCustom(
-			rate.WithCustomPattern("*/service-b/*"),
-			rate.WithCustomLimit(5),
-			rate.WithCustomPeriod(30*time.Second),
-		),
+		//rate.WithCustom(
+		//	rate.WithCustomPattern("*/service-b/*"),
+		//	rate.WithCustomLimit(5000),
+		//	rate.WithCustomPeriod(30*time.Second),
+		//),
 		rate.WithInMemStore(),
 	)
 	return limiter

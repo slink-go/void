@@ -7,6 +7,7 @@ import (
 	"github.com/slink-go/logging"
 	"github.com/ulule/limiter/v3"
 	"github.com/ulule/limiter/v3/drivers/store/memory"
+	"strings"
 	"time"
 )
 
@@ -15,6 +16,42 @@ import (
 // https://github.com/realclientip/realclientip-go/tree/main/_examples
 // https://github.com/realclientip/realclientip-go/wiki/Single-IP-Headers
 
+// region - mode
+
+type LimiterMode int
+
+const (
+	LimiterModeUnknown LimiterMode = iota
+	LimiterModeDenying
+	LimiterModeWaiting
+)
+
+var (
+	modeTypeNames = map[LimiterMode]string{
+		LimiterModeUnknown: "",
+		LimiterModeDenying: "DENY",
+		LimiterModeWaiting: "DELAY",
+	}
+	modeTypeValues = map[string]LimiterMode{
+		"":      LimiterModeUnknown,
+		"DENY":  LimiterModeDenying,
+		"DELAY": LimiterModeWaiting,
+	}
+)
+
+func (m LimiterMode) String() string {
+	return modeTypeNames[m]
+}
+func parseLimiterMode(s string) LimiterMode {
+	s = strings.TrimSpace(strings.ToUpper(s))
+	value, ok := modeTypeValues[s]
+	if !ok {
+		return LimiterModeUnknown
+	}
+	return value
+}
+
+// endregion
 // region - options
 
 type Option interface {
@@ -94,6 +131,27 @@ func WithCustom(options ...CustomLimitOption) Option {
 }
 
 // endregion
+// region -> mode
+
+func WithMode(value string) Option {
+	m := parseLimiterMode(value)
+	if m == LimiterModeUnknown {
+		m = LimiterModeDenying
+	}
+	return &modeOption{
+		value: m,
+	}
+}
+
+type modeOption struct {
+	value LimiterMode
+}
+
+func (c *modeOption) apply(r *limiterImpl) {
+	r.mode = c.value
+}
+
+// endregion
 
 // endregion
 // region - limiter
@@ -120,6 +178,8 @@ func NewLimiter(options ...Option) Limiter {
 
 type Limiter interface {
 	Get(url string) *limiter.Limiter
+	Mode() LimiterMode
+	KeyForPath(path string) string
 }
 
 type limiterImpl struct {
@@ -129,6 +189,7 @@ type limiterImpl struct {
 	}
 	custom []customRateLimit
 	store  limiter.Store
+	mode   LimiterMode
 	logger logging.Logger
 }
 
@@ -140,6 +201,17 @@ func (l *limiterImpl) Get(path string) *limiter.Limiter {
 	rate := l.getRate(path)
 	lm := limiter.New(l.store, rate)
 	return lm
+}
+func (l *limiterImpl) Mode() LimiterMode {
+	return l.mode
+}
+func (l *limiterImpl) KeyForPath(path string) string {
+	for _, custom := range l.custom {
+		if middleware.Match(path, custom.pattern) {
+			return custom.pattern
+		}
+	}
+	return "default"
 }
 
 func (l *limiterImpl) getRate(path string) limiter.Rate {
