@@ -74,7 +74,7 @@ VOID configuration is performed via following environment variables:
 | `LIMITER_MODE=DENY`                                   | Rate limiter mode (OFF, DENY, DELAY)                                            |
 | `LIMITER_LIMIT=1`                                     | Rate limiter global limit (requests per time interval)                          |
 | `LIMITER_PERIOD=1s`                                   | Rate limiter global time interval                                               |
-| `LIMITER_CUSTOM="*/service-a/*,5S-1"`                 | (TBD) Rate limiter custom config (per path pattern)                             |
+| `LIMITER_CUSTOM="*/service-a/*:1:5s,..."`             | Rate limiter custom config (per path pattern): "<pattern>:<limit>:<period>,..." |
 | **LOGGING**                                           |                                                                                 |
 | `GO_ENV=dev`                                          | "dev" - enable "pretty" log, otherwise structured logging is used               |
 | `LOGGING_LEVEL_ROOT=INFO`                             | Root logging level                                                              |
