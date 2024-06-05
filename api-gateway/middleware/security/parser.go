@@ -8,18 +8,62 @@ import (
 	"strings"
 )
 
-func NewResponseParser() ResponseParser {
+type Option interface {
+	apply(rp *responseParser) error
+}
+type mappingOption struct {
+	value map[string]interface{}
+}
+
+func (o *mappingOption) apply(rp *responseParser) error {
+	if o.value != nil {
+		rp.dict = rp.flatten(o.value)
+	}
+	return nil
+}
+
+type filePathOption struct {
+	value string
+}
+
+func (o *filePathOption) apply(rp *responseParser) error {
+	buff, err := os.ReadFile(o.value)
+	if err != nil {
+		return fmt.Errorf("could not read auth response mapping file: %s", err)
+	}
+	d := make(map[string]interface{})
+	if err := json.Unmarshal(buff, &d); err != nil {
+		return fmt.Errorf("could not parse auth response mapping file: %s", err)
+	}
+	rp.dict = rp.flatten(d)
+	return nil
+}
+
+func NewResponseParser(options ...Option) ResponseParser {
 	parser := responseParser{
 		dict:   make(map[string]interface{}),
 		logger: logging.GetLogger("response-parser"),
 	}
+	for _, option := range options {
+		if option != nil {
+			option.apply(&parser)
+		}
+	}
 	return &parser
+}
+func WithMapping(value map[string]interface{}) Option {
+	return &mappingOption{
+		value: value,
+	}
+}
+func WithMappingFile(value string) Option {
+	return &filePathOption{
+		value: value,
+	}
 }
 
 type ResponseParser interface {
 	Parse(source map[string]interface{}) map[string]string
-	WithMapping(mapping map[string]interface{}) ResponseParser
-	LoadMapping(filePath string) ResponseParser
 }
 
 type responseParser struct {
@@ -42,23 +86,6 @@ func (p *responseParser) Parse(source map[string]interface{}) map[string]string 
 		}
 	}
 	return result
-}
-func (p *responseParser) WithMapping(mapping map[string]interface{}) ResponseParser {
-	p.dict = p.flatten(mapping)
-	return p
-}
-func (p *responseParser) LoadMapping(filePath string) ResponseParser {
-	buff, err := os.ReadFile(filePath)
-	if err != nil {
-		fmt.Errorf("could not load auth response mapping file: %s", err)
-		return p
-	}
-	d := make(map[string]interface{})
-	if err := json.Unmarshal(buff, &d); err != nil {
-		fmt.Errorf("could not parse auth response mapping file: %s", err)
-	}
-	p.dict = p.flatten(d)
-	return p
 }
 
 func (p *responseParser) flatten(jsonMap map[string]interface{}) map[string]interface{} {

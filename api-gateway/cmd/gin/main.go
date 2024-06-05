@@ -56,15 +56,15 @@ func startGateway(proxyAddr, monitoringAddr string, dc ...discovery.Client) chan
 	pr := createReverseProxy(res, proc)
 	limiter := createRateLimiter()
 	quitChn := make(chan struct{})
-	go NewGinBasedGateway().
-		WithAuthProvider(ap).
-		WithUserDetailsCache(auth.NewUserDetailsCache(env.DurationOrDefault(env.AuthCacheTTL, time.Second*30))).
-		WithUserDetailsProvider(udp).
-		WithRateLimiter(limiter).
-		WithReverseProxy(pr).
-		WithRegistry(reg).
-		WithQuitChn(quitChn).
-		Serve(proxyAddr, monitoringAddr)
+	go NewGinBasedGateway(
+		WithAuthProvider(ap),
+		WithUserDetailsCache(auth.NewUserDetailsCache(env.DurationOrDefault(env.AuthCacheTTL, time.Second*30))),
+		WithUserDetailsProvider(udp),
+		WithRateLimiter(limiter),
+		WithReverseProxy(pr),
+		WithRegistry(reg),
+		WithQuitChn(quitChn),
+	).Serve(proxyAddr, monitoringAddr)
 	return quitChn
 }
 
@@ -130,18 +130,20 @@ func createStaticClient() discovery.Client {
 }
 
 func createAuthChain() security.AuthProvider {
-	return security.NewAuthChain().
-		WithProvider(security.NewHttpHeaderAuthProvider()).
-		WithProvider(security.NewCookieAuthProvider())
+	return security.NewAuthChain(
+		security.WithProvider(security.NewHttpHeaderAuthProvider()),
+		security.WithProvider(security.NewCookieAuthProvider()),
+	)
 }
 func createUserDetailsProvider(ap security.AuthProvider, res resolver.ServiceResolver, proc resolver.PathProcessor) security.UserDetailsProvider {
-	return security.NewTokenBasedUserDetailsProvider().
-		WithAuthProvider(ap).
-		WithServiceResolver(res).
-		WithPathProcessor(proc).
-		WithMethod(env.StringOrDefault(env.AuthMethod, "GET")).
-		WithAuthEndpoint(env.StringOrDefault(env.AuthEndpoint, "")).
-		WithResponseParser(security.NewResponseParser().LoadMapping(os.Getenv(env.AuthResponseMappingFilePath)))
+	return security.NewTokenBasedUserDetailsProvider(
+		security.UdpWithAuthProvider(ap),
+		security.UdpWithServiceResolver(res),
+		security.UdpWithPathProcessor(proc),
+		security.UdpWithMethod(env.StringOrDefault(env.AuthMethod, "GET")),
+		security.UdpWithAuthEndpoint(env.StringOrDefault(env.AuthEndpoint, "")),
+		security.UdpWithResponseParser(security.NewResponseParser(security.WithMappingFile(os.Getenv(env.AuthResponseMappingFilePath)))),
+	)
 }
 func createReverseProxy(res resolver.ServiceResolver, proc resolver.PathProcessor) *proxy.ReverseProxy {
 	return proxy.CreateReverseProxy().WithServiceResolver(res).WithPathProcessor(proc)

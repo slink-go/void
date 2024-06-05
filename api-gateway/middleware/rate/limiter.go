@@ -128,7 +128,9 @@ func (c *storeOption) apply(r *limiterImpl) {
 func WithCustom(options ...CustomLimitOption) Option {
 	lm := NewCustomRateLimit()
 	for _, option := range options {
-		option.applyCustom(lm)
+		if option != nil {
+			option.applyCustom(lm)
+		}
 	}
 	return lm
 }
@@ -171,7 +173,9 @@ func NewLimiter(options ...Option) Limiter {
 		logger: logging.GetLogger("rate-limiter"),
 	}
 	for _, option := range options {
-		option.apply(&lm)
+		if option != nil {
+			option.apply(&lm)
+		}
 	}
 	if lm.store == nil {
 		panic("rate-limiter store is not set")

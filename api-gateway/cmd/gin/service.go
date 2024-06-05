@@ -78,12 +78,12 @@ func (s *Service) WithHeadHandlers(endpoint string, handlerFunc ...gin.HandlerFu
 	s.engine.HEAD(endpoint, handlerFunc...)
 	return s
 }
-func (s *Service) WithOptionsHandler(endpoint string, handlerFunc gin.HandlerFunc) *Service {
-	s.engine.OPTIONS(endpoint, handlerFunc)
+func (s *Service) WithOptionsHandlers(endpoint string, handlerFunc ...gin.HandlerFunc) *Service {
+	s.engine.OPTIONS(endpoint, handlerFunc...)
 	return s
 }
-func (s *Service) WithNoRouteHandler(handlerFunc gin.HandlerFunc) *Service {
-	s.engine.NoRoute(handlerFunc)
+func (s *Service) WithNoRouteHandlers(handlerFunc ...gin.HandlerFunc) *Service {
+	s.engine.NoRoute(handlerFunc...)
 	return s
 }
 
