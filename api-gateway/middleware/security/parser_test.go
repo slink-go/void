@@ -82,7 +82,7 @@ func TestJsonParse(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	parser := NewResponseParser().WithMapping(dictMap)
+	parser := NewResponseParser(WithMapping(dictMap))
 	result := parser.Parse(sourceMap)
 
 	assert.Contains(t, result, "Ctx-Id")

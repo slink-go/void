@@ -131,12 +131,14 @@ func testPartsSplit(t *testing.T, pp PathProcessor, test, input string, expected
 			t.Fatalf("[%s] paniced: %v]", test, r)
 		}
 	}()
-	parts, err := pp.Split(input)
-	if expectedError != nil {
-		checkExpectedError(t, test, expectedError, err)
-	} else {
-		checkTestArrayResult(t, test, expectedResult, parts, err)
-	}
+	t.Run(test, func(t *testing.T) {
+		parts, err := pp.Split(input)
+		if expectedError != nil {
+			checkExpectedError(t, test, expectedError, err)
+		} else {
+			checkTestArrayResult(t, test, expectedResult, parts, err)
+		}
+	})
 }
 
 func TestPartsJoin(t *testing.T) {

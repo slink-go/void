@@ -7,6 +7,7 @@ import (
 	"github.com/slink-go/api-gateway/discovery"
 	h "github.com/slink-go/api-gateway/middleware/constants"
 	"github.com/slink-go/logging"
+	"math/rand/v2"
 	"net/http"
 	"slices"
 	"strconv"
@@ -189,12 +190,14 @@ func (s *Service) testHandler(c *gin.Context) {
 }
 func (s *Service) slowHandler(c *gin.Context) {
 	s.logger.Info("[slow] start %s", c.RemoteIP())
-	time.Sleep(3 * time.Second)
+	seconds := time.Duration(rand.IntN(5)) * time.Second
+	time.Sleep(seconds)
 	c.String(
 		http.StatusOK,
-		"SLOW %s-%s\n",
+		"SLOW %s-%s (%s)\n",
 		s.applicationId,
 		s.instanceId,
+		seconds,
 	)
 	s.logger.Info("[slow] complete %s", c.RemoteIP())
 }

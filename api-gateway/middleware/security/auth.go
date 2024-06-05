@@ -97,9 +97,6 @@ func NewHttpHeaderAuthProvider() AuthProvider {
 		logger: logging.GetLogger("header-auth-provider"),
 	}
 }
-func (ap *httpHeaderAuthProvider) WithProvider(provider AuthProvider) AuthProvider {
-	return ap
-}
 
 type httpHeaderAuthProvider struct {
 	logger logging.Logger
@@ -151,9 +148,6 @@ func NewCookieAuthProvider() AuthProvider {
 		logger: logging.GetLogger("cookie-auth-provider"),
 	}
 }
-func (ap *cookieAuthProvider) WithProvider(provider AuthProvider) AuthProvider {
-	return ap
-}
 
 type cookieAuthProvider struct {
 	logger logging.Logger
@@ -174,14 +168,34 @@ func (ap *cookieAuthProvider) Get(args ...string) (Auth, error) {
 // endregion
 // region - Auth Providers Chain
 
-func NewAuthChain() AuthProvider {
-	return &authChain{
-		logger: logging.GetLogger("auth-chain"),
+type ChainOption interface {
+	apply(p *authChain)
+}
+type providerOption struct {
+	provider AuthProvider
+}
+
+func (o *providerOption) apply(p *authChain) {
+	if o.provider != nil {
+		p.aps = append(p.aps, o.provider)
 	}
 }
-func (p *authChain) WithProvider(provider AuthProvider) AuthProvider {
-	p.aps = append(p.aps, provider)
-	return p
+func WithProvider(provider AuthProvider) ChainOption {
+	return &providerOption{
+		provider: provider,
+	}
+}
+
+func NewAuthChain(options ...ChainOption) AuthProvider {
+	chain := &authChain{
+		logger: logging.GetLogger("auth-chain"),
+	}
+	for _, option := range options {
+		if option != nil {
+			option.apply(chain)
+		}
+	}
+	return chain
 }
 
 type authChain struct {

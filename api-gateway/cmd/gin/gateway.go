@@ -25,63 +25,142 @@ type GinBasedGateway struct {
 	authCache           auth.Cache
 	reverseProxy        *proxy.ReverseProxy
 	registry            registry.ServiceRegistry
-
-	quitChn chan struct{}
+	limiter             rate.Limiter
+	quitChn             chan struct{}
 }
 
+// region - options
+
+type Option interface {
+	apply(*GinBasedGateway)
+}
+
+// region -> auth provider
+
+type authProviderOption struct {
+	value security.AuthProvider
+}
+
+func (o *authProviderOption) apply(g *GinBasedGateway) {
+	if o.value != nil {
+		g.authProvider = o.value
+	}
+}
+func WithAuthProvider(value security.AuthProvider) Option {
+	return &authProviderOption{value}
+}
+
+// endregion
+// region -> user details provider
+
+type userDetailsProviderOption struct {
+	value security.UserDetailsProvider
+}
+
+func (o *userDetailsProviderOption) apply(g *GinBasedGateway) {
+	if o.value != nil {
+		g.userDetailsProvider = o.value
+	}
+}
+func WithUserDetailsProvider(value security.UserDetailsProvider) Option {
+	return &userDetailsProviderOption{value}
+}
+
+// endregion
+// region -> user details cache
+
+type userDetailsCacheOption struct {
+	value auth.Cache
+}
+
+func (o *userDetailsCacheOption) apply(g *GinBasedGateway) {
+	if o.value != nil {
+		g.authCache = o.value
+	}
+}
+func WithUserDetailsCache(value auth.Cache) Option {
+	return &userDetailsCacheOption{value}
+}
+
+// endregion
+// region -> reverse proxy
+
+type reverseProxyOption struct {
+	value *proxy.ReverseProxy
+}
+
+func (o *reverseProxyOption) apply(g *GinBasedGateway) {
+	if o.value != nil {
+		g.reverseProxy = o.value
+	}
+}
+func WithReverseProxy(value *proxy.ReverseProxy) Option {
+	return &reverseProxyOption{value}
+}
+
+// endregion
+// region -> rate limiter
+
+type rateLimiterOption struct {
+	value rate.Limiter
+}
+
+func (o *rateLimiterOption) apply(g *GinBasedGateway) {
+	if o.value != nil {
+		g.limiter = o.value
+	}
+}
+func WithRateLimiter(value rate.Limiter) Option {
+	return &rateLimiterOption{value}
+}
+
+// endregion
+// region -> registry
+
+type registryOption struct {
+	value registry.ServiceRegistry
+}
+
+func (o *registryOption) apply(g *GinBasedGateway) {
+	if o.value != nil {
+		g.registry = o.value
+	}
+}
+func WithRegistry(value registry.ServiceRegistry) Option {
+	return &registryOption{value}
+}
+
+// endregion
+// region -> quit chn
+
+type quitChnOption struct {
+	value chan struct{}
+}
+
+func (o *quitChnOption) apply(g *GinBasedGateway) {
+	if o.value != nil {
+		g.quitChn = o.value
+	}
+}
+func WithQuitChn(value chan struct{}) Option {
+	return &quitChnOption{value}
+}
+
+// endregion
+
+// endregion
 //region - initializers
 
-func NewGinBasedGateway() gateway.Gateway {
+func NewGinBasedGateway(options ...Option) gateway.Gateway {
 	gw := GinBasedGateway{
 		logger: logging.GetLogger("gin-gateway"),
 	}
+	for _, option := range options {
+		if option != nil {
+			option.apply(&gw)
+		}
+	}
 	return &gw
-}
-func (g *GinBasedGateway) WithAuthProvider(ap security.AuthProvider) gateway.Gateway {
-	g.authProvider = ap
-	return g
-}
-func (g *GinBasedGateway) WithUserDetailsProvider(udp security.UserDetailsProvider) gateway.Gateway {
-	g.userDetailsProvider = udp
-	return g
-}
-func (g *GinBasedGateway) WithUserDetailsCache(cache auth.Cache) gateway.Gateway {
-	g.authCache = cache
-	return g
-}
-func (g *GinBasedGateway) WithReverseProxy(reverseProxy *proxy.ReverseProxy) gateway.Gateway {
-	g.reverseProxy = reverseProxy
-	return g
-}
-func (g *GinBasedGateway) WithRateLimiter(limit rate.Limiter) gateway.Gateway {
-	//limiterConfig := limiter.Config{
-	//	Max:                    limit.GetLimit(),
-	//	Expiration:             time.Minute,
-	//	SkipFailedRequests:     false,
-	//	SkipSuccessfulRequests: false,
-	//	LimiterMiddleware:      limiter.FixedWindow{},
-	//	LimitReached: func(c *fiber.Ctx) error {
-	//		return c.Status(http.StatusTooManyRequests).Send([]byte(fmt.Sprintf("Too Many Requests\n")))
-	//	},
-	//	KeyGenerator: func(c *fiber.Ctx) string {
-	//		proxyIP := c.Get("X-Forwarded-For")
-	//		if proxyIP != "" {
-	//			return proxyIP
-	//		} else {
-	//			return c.IP()
-	//		}
-	//	},
-	//}
-	//g.limiter = limiter.New(limiterConfig)
-	return g
-}
-func (g *GinBasedGateway) WithRegistry(registry registry.ServiceRegistry) gateway.Gateway {
-	g.registry = registry
-	return g
-}
-func (g *GinBasedGateway) WithQuitChn(chn chan struct{}) gateway.Gateway {
-	g.quitChn = chn
-	return g
 }
 
 func (g *GinBasedGateway) Serve(addresses ...string) {
@@ -106,19 +185,21 @@ func (g *GinBasedGateway) Serve(addresses ...string) {
 		authEnabled := env.BoolOrDefault(env.AuthEnabled, false)
 		NewService("proxy").
 			WithPrometheus().
+			WithMiddleware(gin.Recovery()).
+			WithMiddleware(customLogger()).
+			WithMiddleware(headersCleaner()).
+			WithMiddleware(rateLimiter(g.limiter)).
 			WithMiddleware(helmet.Default()). // TODO: custom helmet config
 			//WithMiddleware(csrf.New()). // TODO: implement it for Gin (?)
-			//WithMiddleware(timeoutMiddleware(100 * time.Millisecond)). // TODO: skip paths
-			//WithMiddleware(rateLimiter()).
+			//WithMiddleware(timeouter(100 * time.Millisecond)). // TODO: skip paths
 			WithMiddleware(proxyTargetResolver(g.reverseProxy)).
 			//WithMiddleware(circuitBreaker()).
-			WithMiddleware(headersCleaner()). // cleanup incoming headers
 			WithOptionalMiddleware(authEnabled, authResolver(g.authProvider)).
 			WithOptionalMiddleware(authEnabled, authCache(g.authCache)).
 			WithOptionalMiddleware(authEnabled, authProvider(g.userDetailsProvider, g.authCache)).
 			WithMiddleware(localeResolver()).
 			WithMiddleware(contextConfigurator()).
-			WithNoRouteHandler(g.proxyHandler).
+			WithNoRouteHandlers(g.proxyHandler).
 			WithQuitChn(g.quitChn).
 			Run(addresses[0])
 
@@ -162,8 +243,8 @@ func (g *GinBasedGateway) proxyHandler(ctx *gin.Context) {
 
 	g.logger.Trace("proxying %s", proxyTarget)
 
-	ctx.Set("X-Forwarded-For", ctx.RemoteIP())
-	ctx.Set("X-Real-Ip", ctx.ClientIP())
+	//ctx.Set("X-Forwarded-For", ctx.RemoteIP())
+	//ctx.Set("X-Real-Ip", ctx.ClientIP())
 
 	g.reverseProxy.Proxy(ctx, proxyTarget).ServeHTTP(ctx.Writer, ctx.Request)
 

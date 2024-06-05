@@ -5,7 +5,6 @@ import (
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/slink-go/logger"
 	"github.com/slink-go/logging"
 	"log"
 	"net/http"
@@ -17,7 +16,7 @@ import (
 
 func NewService(name string) *Service {
 	return &Service{
-		engine: gin.Default(),
+		engine: gin.New(), //gin.Default(),
 		name:   name,
 		logger: logging.GetLogger(name),
 	}
@@ -44,7 +43,7 @@ func (s *Service) Run(address string) {
 			s.logger.Panic("[service][%s] listen: %s\n", address, err)
 		}
 	}()
-	logger.Info("start %s service on %s", s.name, address)
+	s.logger.Info("start %s service on %s", s.name, address)
 	s.handleBreak(server)
 }
 
@@ -79,12 +78,12 @@ func (s *Service) WithHeadHandlers(endpoint string, handlerFunc ...gin.HandlerFu
 	s.engine.HEAD(endpoint, handlerFunc...)
 	return s
 }
-func (s *Service) WithOptionsHandler(endpoint string, handlerFunc gin.HandlerFunc) *Service {
-	s.engine.OPTIONS(endpoint, handlerFunc)
+func (s *Service) WithOptionsHandlers(endpoint string, handlerFunc ...gin.HandlerFunc) *Service {
+	s.engine.OPTIONS(endpoint, handlerFunc...)
 	return s
 }
-func (s *Service) WithNoRouteHandler(handlerFunc gin.HandlerFunc) *Service {
-	s.engine.NoRoute(handlerFunc)
+func (s *Service) WithNoRouteHandlers(handlerFunc ...gin.HandlerFunc) *Service {
+	s.engine.NoRoute(handlerFunc...)
 	return s
 }
 

@@ -30,5 +30,10 @@ const (
 
 	RegistryRefreshInitialDelay = "REGISTRY_REFRESH_INITIAL_DELAY"
 	RegistryRefreshInterval     = "REGISTRY_REFRESH_INTERVAL" // default 60s
-	RateLimitRPM                = "RATE_LIMIT_RPM"            // rate limit "requests per minute" (for fiber limiter)
+
+	LimiterLimit                  = "LIMITER_LIMIT"
+	LimiterPeriod                 = "LIMITER_PERIOD"
+	LimiterMode                   = "LIMITER_MODE"
+	LimiterCustomConfig           = "LIMITER_CUSTOM"
+	RateLimitCacheCleanupInterval = "RATE_LIMIT_CACHE_CLEANUP_INTERVAL"
 )
