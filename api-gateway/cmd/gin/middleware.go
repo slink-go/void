@@ -20,6 +20,8 @@ import (
 	"time"
 )
 
+// region - logger
+
 func customLogger() gin.HandlerFunc {
 	logger := logging.GetLogger("gin")
 	return func(c *gin.Context) {
@@ -42,7 +44,9 @@ func customLogger() gin.HandlerFunc {
 	}
 }
 
-// headersCleaner - cleanup incoming headers to prevent security issues
+// endregion
+// region - headersCleaner - cleanup incoming headers to prevent security issues
+
 func headersCleaner(headers ...string) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		if headers == nil || len(headers) == 0 {
@@ -59,13 +63,9 @@ func headersCleaner(headers ...string) gin.HandlerFunc {
 	}
 }
 
-//func realIp() gin.HandlerFunc {
-//	return func(ctx *gin.Context) {
-//		ctx.Header("X-Real-Ip", ctx.ClientIP())
-//	}
-//}
+// endregion
+// region - proxy target resolver - resolve request URL to target service URL
 
-// proxyTargetResolver - resolve request URL to target service URL
 func proxyTargetResolver(reverseProxy *proxy.ReverseProxy) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		logger := logging.GetLogger("resolver-middleware")
@@ -75,16 +75,16 @@ func proxyTargetResolver(reverseProxy *proxy.ReverseProxy) gin.HandlerFunc {
 			logger.Trace("%s", stacktrace.RootCause(err))
 			switch err.(type) {
 			case *resolver.ErrEmptyBaseUrl:
-				ctx.Writer.WriteString(err.Error())
-				ctx.Writer.WriteString("\n")
-				ctx.AbortWithError(http.StatusBadRequest, err)
+				_, _ = ctx.Writer.WriteString(err.Error())
+				_, _ = ctx.Writer.WriteString("\n")
+				_ = ctx.AbortWithError(http.StatusBadRequest, err)
 			case *resolver.ErrInvalidPath:
-				ctx.Writer.WriteString(err.Error())
-				ctx.Writer.WriteString("\n")
-				ctx.AbortWithError(http.StatusBadRequest, err)
+				_, _ = ctx.Writer.WriteString(err.Error())
+				_, _ = ctx.Writer.WriteString("\n")
+				_ = ctx.AbortWithError(http.StatusBadRequest, err)
 			case *registry.ErrServiceUnavailable:
-				ctx.Writer.WriteString(err.Error())
-				ctx.Writer.WriteString("\n")
+				_, _ = ctx.Writer.WriteString(err.Error())
+				_, _ = ctx.Writer.WriteString("\n")
 				ctx.AbortWithStatus(http.StatusServiceUnavailable)
 			}
 		} else {
@@ -97,46 +97,46 @@ func proxyTargetResolver(reverseProxy *proxy.ReverseProxy) gin.HandlerFunc {
 	}
 }
 
-// authResolver - resolve request authentication type/value
+// endregion
+// region - authentication
+
 func authResolver(authProvider security.AuthProvider) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		header := ctx.GetHeader(constants.HdrAuthorization)
 		cookie, _ := ctx.Cookie(constants.HdrAuthToken)
-		auth, err := authProvider.Get(header, cookie)
-		if err == nil && auth != nil {
-			switch auth.GetType() {
+		authentication, err := authProvider.Get(header, cookie)
+		if err == nil && authentication != nil {
+			switch authentication.GetType() {
 			case security.TypeBearer:
 				fallthrough
 			case security.TypeCookie:
-				ctx.Set(constants.RequestContextAuth, auth)
+				ctx.Set(constants.RequestContextAuth, authentication)
+			default:
 			}
 		}
 	}
 }
-
 func authCache(cache auth.Cache) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		if cache == nil {
 			return
 		}
-		var auth security.Auth
+		var authentication security.Auth
 		if v, ok := ctx.Get(constants.RequestContextAuth); ok {
-			if auth, ok = v.(security.Auth); !ok || auth == nil {
+			if authentication, ok = v.(security.Auth); !ok || authentication == nil {
 				return
 			}
 		}
-		if auth == nil {
+		if authentication == nil {
 			return
 		}
-		v, ok := cache.Get(fmt.Sprintf("%v", auth.GetValue()))
+		v, ok := cache.Get(fmt.Sprintf("%v", authentication.GetValue()))
 		if !ok {
 			return
 		}
 		ctx.Set(constants.RequestContextUserDetails, v)
 	}
 }
-
-// authProvider - provide authorized user details for given Auth
 func authProvider(userDetailsProvider security.UserDetailsProvider, cache auth.Cache) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		if v, ok := ctx.Get(constants.RequestContextUserDetails); ok {
@@ -144,20 +144,20 @@ func authProvider(userDetailsProvider security.UserDetailsProvider, cache auth.C
 				return
 			}
 		}
-		var auth security.Auth
+		var authentication security.Auth
 		if v, ok := ctx.Get(constants.RequestContextAuth); ok {
-			if auth, ok = v.(security.Auth); !ok || auth == nil {
+			if authentication, ok = v.(security.Auth); !ok || authentication == nil {
 				return
 			}
 		}
-		if auth == nil {
+		if authentication == nil {
 			return
 		}
-		switch auth.GetType() {
+		switch authentication.GetType() {
 		case security.TypeBearer:
 			fallthrough
 		case security.TypeCookie:
-			token := auth.GetValue().(string)
+			token := authentication.GetValue().(string)
 			userDetails, err := userDetailsProvider.Get(token)
 			if err != nil {
 				logging.GetLogger("middleware").Warning("%s", stacktrace.RootCause(err))
@@ -168,11 +168,14 @@ func authProvider(userDetailsProvider security.UserDetailsProvider, cache auth.C
 					cache.Set(token, userDetails)
 				}
 			}
+		default:
 		}
 	}
 }
 
-// localeResolver - resolve request locale
+// endregion
+// region - locale resolver
+
 func localeResolver() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		l := ctx.Request.URL.Query().Get("lang")
@@ -191,7 +194,9 @@ func localeResolver() gin.HandlerFunc {
 	}
 }
 
-// contextConfigurator - configure proxied request headers
+// endregion
+// region - context configurator
+
 func contextConfigurator() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		locale, ok := ctx.Get(constants.RequestContextLocale)
@@ -213,7 +218,9 @@ func contextConfigurator() gin.HandlerFunc {
 	}
 }
 
-// timeouter - ...
+// endregion
+// region - timeouter - ...
+
 func timeouter(tm time.Duration) gin.HandlerFunc {
 	logger := logging.GetLogger("timeout-middleware")
 	return timeout.New(
@@ -224,6 +231,9 @@ func timeouter(tm time.Duration) gin.HandlerFunc {
 		}),
 	)
 }
+
+// endregion
+// region - rate limiter
 
 func rateLimiter(lim rate.Limiter) gin.HandlerFunc {
 	if lim == nil {
@@ -242,15 +252,15 @@ func rateLimiter(lim rate.Limiter) gin.HandlerFunc {
 					c.Writer.WriteHeader(http.StatusTooManyRequests)
 					wait, err := getWait(lmtr, c)
 					if err != nil {
-						c.Writer.Write([]byte("Too many requests.\n"))
+						_, _ = c.Writer.Write([]byte("Too many requests.\n"))
 					} else {
-						c.Writer.Write([]byte(fmt.Sprintf("Too many requests. Try again in %d seconds.\n", wait)))
+						_, _ = c.Writer.Write([]byte(fmt.Sprintf("Too many requests. Try again in %d seconds.\n", wait)))
 					}
 					c.Abort()
 				} else {
 					wait, err := getWait(lmtr, c)
 					if err != nil {
-						c.Writer.Write([]byte("Too many requests.\n"))
+						_, _ = c.Writer.Write([]byte("Too many requests.\n"))
 						c.Abort()
 					}
 					timer := time.NewTimer(time.Duration(wait) * time.Second)
@@ -278,7 +288,7 @@ func getWait(lmtr *limiter.Limiter, c *gin.Context) (int64, error) {
 	return wait, nil
 }
 func rateLimitKeyGetter(ctx *gin.Context) string {
-	realIp := ctx.ClientIP()
+	realIp := ctx.ClientIP() // TODO: use correct way to find "trusted" client ip (see TODO.md)
 	v, ok := ctx.Get(constants.CtxRateLimiter)
 	if !ok {
 		return realIp
@@ -290,4 +300,12 @@ func rateLimitKeyGetter(ctx *gin.Context) string {
 	return realIp + ":" + lim.KeyForPath(ctx.Request.URL.Path)
 }
 
+// endregion
+
 //func circuitBreakerMiddleware()
+
+//func realIp() gin.HandlerFunc {
+//	return func(ctx *gin.Context) {
+//		ctx.Header("X-Real-Ip", ctx.ClientIP())
+//	}
+//}
