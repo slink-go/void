@@ -124,7 +124,6 @@ services:
       - "3212:3001"
     depends_on:
       - backend-a4
-
   backend-b2:
     <<: *backend
     container_name: backend-b2

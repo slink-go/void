@@ -23,15 +23,8 @@ func main() {
 	instanceId := env.StringOrDefault("INSTANCE_ID", "1")
 
 	services := []*Service{
-		//Create(serviceName, instanceId, getPort(basePort, 0), "eureka"),
+		Create(serviceName, instanceId, getPort(basePort, 0), "eureka"),
 		Create(serviceName, instanceId, getPort(basePort, 1), "disco"),
-		//Create("service-a", "A2", getPort(basePort, 102), "eureka"),
-		//Create("service-b", "B1", getPort(basePort, 201), "eureka"),
-		//Create("service-b", "B2", getPort(basePort, 202), "eureka"),
-		//Create("service-a", "A3", getPort(basePort, 103), "disco"),
-		//Create("service-a", "A4", getPort(basePort, 104), "disco"),
-		//Create("service-b", "B3", getPort(basePort, 203), "disco"),
-		//Create("service-b", "B4", getPort(basePort, 204), "disco"),
 	}
 
 	started := 0
