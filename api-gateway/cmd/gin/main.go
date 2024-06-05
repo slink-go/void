@@ -13,7 +13,10 @@ import (
 	"github.com/slink-go/api-gateway/registry"
 	"github.com/slink-go/api-gateway/resolver"
 	"github.com/slink-go/logging"
+	"github.com/xhit/go-str2duration/v2"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -149,22 +152,56 @@ func createReverseProxy(res resolver.ServiceResolver, proc resolver.PathProcesso
 	return proxy.CreateReverseProxy().WithServiceResolver(res).WithPathProcessor(proc)
 }
 func createRateLimiter() rate.Limiter {
-	limiter := rate.NewLimiter(
-		rate.WithLimit(env.Int64OrDefault(env.LimiterLimit, 10)),
-		rate.WithPeriod(env.DurationOrDefault(env.LimiterPeriod, time.Minute)),
-		rate.WithMode(env.StringOrDefault(env.LimiterMode, "")),
-		// TODO: implement configurable custom limits
-		rate.WithCustom(
-			rate.WithCustomPattern("*/service-a/*"),
-			rate.WithCustomLimit(10),
-			rate.WithCustomPeriod(10*time.Second),
-		),
-		//rate.WithCustom(
-		//	rate.WithCustomPattern("*/service-b/*"),
-		//	rate.WithCustomLimit(5000),
-		//	rate.WithCustomPeriod(30*time.Second),
-		//),
-		rate.WithInMemStore(),
-	)
+	var options []rate.Option
+	options = append(options, rate.WithLimit(env.Int64OrDefault(env.LimiterLimit, 10)))
+	options = append(options, rate.WithPeriod(env.DurationOrDefault(env.LimiterPeriod, time.Minute)))
+	options = append(options, rate.WithMode(env.StringOrDefault(env.LimiterMode, "")))
+	options = append(options, rate.WithInMemStore())
+	options = append(options, parseCustomRateLimits()...)
+	limiter := rate.NewLimiter(options...)
 	return limiter
+}
+func parseCustomRateLimits() []rate.Option {
+	logger := logging.GetLogger("custom-rate-parser")
+	v, err := env.String(env.LimiterCustomConfig)
+	if err != nil {
+		return nil
+	}
+	var result []rate.Option
+	for _, part := range strings.Split(v, ",") {
+		pattern, period, limit, err := parseCustomRateConfig(part)
+		if err != nil {
+			logger.Warning("%s", err)
+			continue
+		}
+		logger.Debug("adding custom rate: '%s' '%v' '%v'", pattern, period, limit)
+		result = append(result, rate.WithCustom(
+			rate.WithCustomPattern(pattern),
+			rate.WithCustomLimit(limit),
+			rate.WithCustomPeriod(period),
+		))
+	}
+	return result
+}
+
+func parseCustomRateConfig(input string) (pattern string, period time.Duration, limit int64, err error) {
+	parts := strings.SplitN(input, ":", 3)
+	if len(parts) != 3 {
+		err = fmt.Errorf("invalid custom config '%s'", input)
+		return
+	}
+	pattern = parts[0]
+
+	v, err := strconv.Atoi(parts[1])
+	if err != nil {
+		err = fmt.Errorf("could not parse limit '%s': %s", parts[1], err)
+		return
+	}
+	limit = int64(v)
+
+	period, err = str2duration.ParseDuration(strings.ToLower(parts[2]))
+	if err != nil {
+		err = fmt.Errorf("could not parse duration '%s': %s", parts[2], err)
+	}
+	return
 }

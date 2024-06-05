@@ -34,5 +34,6 @@ const (
 	LimiterLimit                  = "LIMITER_LIMIT"
 	LimiterPeriod                 = "LIMITER_PERIOD"
 	LimiterMode                   = "LIMITER_MODE"
+	LimiterCustomConfig           = "LIMITER_CUSTOM"
 	RateLimitCacheCleanupInterval = "RATE_LIMIT_CACHE_CLEANUP_INTERVAL"
 )
