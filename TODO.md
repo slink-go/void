@@ -44,7 +44,7 @@
 ### URL Pattern Matching
 1. [ ] auth skip urls
 2. [ ] timeout skip urls
-3. [ ] rate limit: custom config
+3. [x] rate limit: custom config
 
 ### Procedure
 ```text
