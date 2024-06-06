@@ -6,6 +6,7 @@ import (
 	"github.com/slink-go/logging"
 	"os"
 	"os/signal"
+	"slices"
 	"strings"
 	"sync"
 	"syscall"
@@ -45,22 +46,15 @@ func (sr *serviceRegistry) refresh() {
 			timer.Stop()
 			return
 		case <-timer.C:
-			remotes := make(map[string][]discovery.Remote)
+			remotes := make(map[string]map[string]discovery.Remote)
 			directory := createRingBuffers()
 			for _, client := range sr.clients {
 				if client == nil {
 					continue
 				}
-				for _, instance := range client.Services().List() {
-					appId := strings.ToUpper(instance.App)
-					if _, ok := remotes[appId]; !ok {
-						remotes[appId] = make([]discovery.Remote, 0)
-					}
-					sr.logger.Trace("[%T] add instance: %s %s", client, appId, instance)
-					remotes[appId] = append(remotes[appId], instance)
-				}
+				sr.getRemotes(remotes, client)
 			}
-			for k, list := range remotes {
+			for k, list := range sr.filterRemotes(remotes) {
 				directory.New(k, len(list))
 				for _, url := range list {
 					v := url
@@ -73,6 +67,33 @@ func (sr *serviceRegistry) refresh() {
 		}
 		timer.Reset(interval)
 	}
+}
+
+func (sr *serviceRegistry) getRemotes(destination map[string]map[string]discovery.Remote, client discovery.Client) {
+	for _, instance := range client.Services().List() {
+		appId := strings.ToUpper(instance.App)
+		if _, ok := destination[appId]; !ok {
+			destination[appId] = make(map[string]discovery.Remote, 0)
+		}
+		m := destination[appId]
+		sr.logger.Trace("[%T] add instance: %s %s", client, appId, instance)
+		if _, ok := destination[appId][instance.String()]; !ok {
+			m[instance.String()] = instance
+		}
+	}
+}
+func (sr *serviceRegistry) filterRemotes(source map[string]map[string]discovery.Remote) map[string][]discovery.Remote {
+	remotes := make(map[string][]discovery.Remote)
+	for _, service := range source {
+		for _, instance := range service {
+			appId := strings.ToUpper(instance.App)
+			if _, ok := remotes[appId]; !ok {
+				remotes[appId] = make([]discovery.Remote, 0)
+			}
+			remotes[appId] = append(remotes[appId], instance)
+		}
+	}
+	return remotes
 }
 
 func (sr *serviceRegistry) Get(serviceName string) (string, error) {
@@ -91,5 +112,6 @@ func (sr *serviceRegistry) List() []discovery.Remote {
 		vv := v.(*discovery.Remote)
 		result = append(result, *vv)
 	}
+	slices.SortFunc(result, discovery.Remote.Compare)
 	return result
 }

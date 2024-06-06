@@ -24,7 +24,7 @@ func main() {
 
 	services := []*Service{
 		Create(serviceName, instanceId, getPort(basePort, 0), "eureka"),
-		Create(serviceName, instanceId, getPort(basePort, 1), "disco"),
+		Create(serviceName, instanceId, getPort(basePort, 0), "disco"),
 	}
 
 	started := 0
