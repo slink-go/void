@@ -34,7 +34,7 @@ type eurekaClient struct {
 	sigChn       chan os.Signal
 }
 
-func (c *eurekaClient) Connect() error {
+func (c *eurekaClient) Connect(options ...interface{}) error {
 
 	c.mutex.Lock()
 	c.running = true
@@ -216,4 +216,7 @@ func (c *eurekaClient) handleSignal() {
 			return
 		}
 	}
+}
+func (c *eurekaClient) NotificationsChn() chan struct{} {
+	return nil
 }

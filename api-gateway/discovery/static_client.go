@@ -16,6 +16,10 @@ type Provider struct {
 	config map[string][]Remote
 }
 
+func (c *Provider) NotificationsChn() chan struct{} {
+	return nil
+}
+
 func LoadFromFile(path string) (Client, error) {
 
 	type registryConfigRecord struct {
@@ -70,7 +74,7 @@ func NewStaticClient(services map[string][]Remote) Client {
 	}
 }
 
-func (c *Provider) Connect() error {
+func (c *Provider) Connect(options ...interface{}) error {
 	return nil
 }
 func (c *Provider) Services() *Remotes {

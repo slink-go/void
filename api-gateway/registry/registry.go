@@ -31,6 +31,17 @@ func NewServiceRegistry(clients ...discovery.Client) ServiceRegistry {
 
 	signal.Notify(registry.sigChn, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
 
+	for _, client := range clients {
+		if client != nil && client.NotificationsChn() != nil {
+			go func() {
+				for range client.NotificationsChn() {
+					registry.logger.Trace(" > update detected... refreshing")
+					registry.doRefresh()
+				}
+			}()
+		}
+	}
+
 	go registry.refresh()
 
 	return &registry
@@ -46,29 +57,31 @@ func (sr *serviceRegistry) refresh() {
 			timer.Stop()
 			return
 		case <-timer.C:
-			remotes := make(map[string]map[string]discovery.Remote)
-			directory := createRingBuffers()
-			for _, client := range sr.clients {
-				if client == nil {
-					continue
-				}
-				sr.getRemotes(remotes, client)
-			}
-			for k, list := range sr.filterRemotes(remotes) {
-				directory.New(k, len(list))
-				for _, url := range list {
-					v := url
-					directory.Set(k, &v)
-				}
-			}
-			sr.mutex.Lock()
-			sr.serviceDirectory = directory
-			sr.mutex.Unlock()
 		}
 		timer.Reset(interval)
 	}
 }
 
+func (sr *serviceRegistry) doRefresh() {
+	remotes := make(map[string]map[string]discovery.Remote)
+	directory := createRingBuffers()
+	for _, client := range sr.clients {
+		if client == nil {
+			continue
+		}
+		sr.getRemotes(remotes, client)
+	}
+	for k, list := range sr.filterRemotes(remotes) {
+		directory.New(k, len(list))
+		for _, url := range list {
+			v := url
+			directory.Set(k, &v)
+		}
+	}
+	sr.mutex.Lock()
+	sr.serviceDirectory = directory
+	sr.mutex.Unlock()
+}
 func (sr *serviceRegistry) getRemotes(destination map[string]map[string]discovery.Remote, client discovery.Client) {
 	for _, instance := range client.Services().List() {
 		appId := strings.ToUpper(instance.App)

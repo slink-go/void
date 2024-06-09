@@ -13,7 +13,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/palantir/stacktrace v0.0.0-20161112013806-78658fd2d177
 	github.com/prometheus/client_golang v1.16.0
-	github.com/slink-go/disco-go v0.0.18
+	github.com/slink-go/disco-go v0.0.19
 	github.com/slink-go/disco/common v0.0.8
 	github.com/slink-go/go-eureka-client v1.1.1
 	github.com/slink-go/logging v0.0.2
@@ -53,7 +53,7 @@ require (
 	github.com/prometheus/client_model v0.4.0 // indirect
 	github.com/prometheus/common v0.44.0 // indirect
 	github.com/prometheus/procfs v0.11.0 // indirect
-	github.com/rs/zerolog v1.32.0 // indirect
+	github.com/rs/zerolog v1.33.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/slink-go/httpclient v0.0.8 // indirect
 	github.com/slink-go/logger v0.0.1 // indirect
@@ -64,7 +64,7 @@ require (
 	golang.org/x/crypto v0.23.0 // indirect
 	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/sync v0.2.0 // indirect
-	golang.org/x/sys v0.20.0 // indirect
+	golang.org/x/sys v0.21.0 // indirect
 	golang.org/x/text v0.15.0 // indirect
 	google.golang.org/protobuf v1.34.1 // indirect
 )

@@ -14,21 +14,23 @@ import (
 
 func NewDiscoClient(config *discoConfig) Client {
 	return &discoClient{
-		config: *config,
-		logger: logging.GetLogger("disco-client"),
-		sigChn: make(chan os.Signal),
+		config:        *config,
+		logger:        logging.GetLogger("disco-client"),
+		sigChn:        make(chan os.Signal),
+		Notifications: nil,
 	}
 }
 
 type discoClient struct {
-	config discoConfig
-	mutex  sync.RWMutex
-	client d.DiscoClient
-	logger logging.Logger
-	sigChn chan os.Signal
+	config        discoConfig
+	mutex         sync.RWMutex
+	client        d.DiscoClient
+	logger        logging.Logger
+	sigChn        chan os.Signal
+	Notifications chan struct{}
 }
 
-func (c *discoClient) Connect() error {
+func (c *discoClient) Connect(options ...interface{}) error {
 	if c.config.url == "" {
 		return fmt.Errorf("disco url is empty")
 	}
@@ -41,6 +43,14 @@ func (c *discoClient) Connect() error {
 		WithAuth(c.config.login, c.config.password).
 		WithName(c.config.application).
 		WithEndpoints([]string{fmt.Sprintf("%s://%s:%d", "http", c.config.getIP(), c.config.port)})
+
+	if len(options) > 0 {
+		if chn, ok := options[0].(chan struct{}); ok {
+			cfg.WithNotificationChn(chn)
+			c.Notifications = chn
+		}
+	}
+
 	//WithMeta()
 	go func() {
 		for {
@@ -82,4 +92,7 @@ func (c *discoClient) Services() *Remotes {
 		}
 	}
 	return &result
+}
+func (c *discoClient) NotificationsChn() chan struct{} {
+	return c.Notifications
 }

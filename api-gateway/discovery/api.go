@@ -1,6 +1,7 @@
 package discovery
 
 type Client interface {
-	Connect() error
+	Connect(options ...interface{}) error
 	Services() *Remotes
+	NotificationsChn() chan struct{}
 }

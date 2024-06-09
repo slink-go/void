@@ -111,7 +111,8 @@ func createDiscoClient() discovery.Client {
 			).
 			WithApplication(env.StringOrDefault(env.GatewayName, "fiber-gateway")),
 	)
-	if err := dc.Connect(); err != nil {
+
+	if err := dc.Connect(make(chan struct{})); err != nil {
 		logging.GetLogger("main").Warning("disco client initialization error: %s", err)
 		return nil
 	}

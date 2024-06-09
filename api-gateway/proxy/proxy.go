@@ -8,9 +8,11 @@ import (
 	"github.com/slink-go/api-gateway/resolver"
 	"github.com/slink-go/logging"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"time"
 )
 
 type ReverseProxy struct {
@@ -62,6 +64,14 @@ func (p *ReverseProxy) Proxy(ctx *gin.Context, address *url.URL) *httputil.Rever
 	pr.ModifyResponse = p.modifyResponseHandle(address)
 	pr.ErrorHandler = p.errHandle
 
+	pr.Transport = &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   1 * time.Second, // TODO: configurable variable
+			KeepAlive: 5 * time.Second, // TODO: configurable variable
+		}).DialContext,
+		TLSHandshakeTimeout: 1 * time.Second, // TODO: configurable variable
+	}
 	return pr
 }
 func (p *ReverseProxy) modifyResponseHandle(address *url.URL) func(response *http.Response) error {
