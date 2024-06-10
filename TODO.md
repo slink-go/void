@@ -15,7 +15,7 @@
 12. [x] AuthProvider chaining ( http header -> cookie -> ... )
 13. [ ] ~~Fallback (to default backend service) (?)~~
 14. [ ] Profiling
-15. [ ] Configuration & feature flags
+15. [+] Configuration & feature flags
 16. [ ] Handle dead peers (connection refused)
 17. [ ] Remote peers filter (?) (by meta, by status, ...)
 18. [x] Static resolver config from file
@@ -33,8 +33,8 @@
 3. [ ] Timeout support (except sse/ws)
 4. [ ] Metrics / latency measurement
 5. [ ] Bulkhead / circuit breaker / etc
-6. [ ] Limiter config
-7. [ ] Auth cache middleware
+6. [+] Limiter config
+7. [+] Auth cache middleware
    [x] inmem
    [ ] redis
 8. [x] Rate Limiter (DELAY, DENY)
