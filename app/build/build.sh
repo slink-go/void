@@ -10,6 +10,17 @@ VERSION_SHORT=$(echo "$(cat ${DIR}/VERSION)")
 VERSION_LONG=$(echo "v$(cat ${DIR}/VERSION) ($(git describe --abbrev=8 --always --long))")
 #cat ${DIR}/build/logo.txt | sed -e "s/0.0.0/${VERSION_LONG}/g" > ${DIR}/src/logo.txt
 
+source "${DIR}/.env" || true
+if [ -z "$DOCKER_LOGIN" ]; then
+  echo "DOCKER_LOGIN variable not set"
+  exit 1
+fi
+if [ -z "$DOCKER_PASSWORD" ]; then
+  echo "DOCKER_PASSWORD variable not set"
+  exit 1
+fi
+echo "$DOCKER_PASSWORD" | docker login --password-stdin -u "$DOCKER_LOGIN"
+
 cd "${DIR}/../.."
 
 function build_backend() {
