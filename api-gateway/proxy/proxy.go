@@ -5,12 +5,15 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/slink-go/api-gateway/cmd/common/env"
 	"github.com/slink-go/api-gateway/resolver"
 	"github.com/slink-go/logging"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"time"
 )
 
 type ReverseProxy struct {
@@ -62,6 +65,14 @@ func (p *ReverseProxy) Proxy(ctx *gin.Context, address *url.URL) *httputil.Rever
 	pr.ModifyResponse = p.modifyResponseHandle(address)
 	pr.ErrorHandler = p.errHandle
 
+	pr.Transport = &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   env.DurationOrDefault(env.TargetConnTimeout, 1*time.Second),
+			KeepAlive: env.DurationOrDefault(env.TargetConnKeepAlive, 5*time.Second),
+		}).DialContext,
+		TLSHandshakeTimeout: env.DurationOrDefault(env.TargetTLSHandshakeTimeout, 1*time.Second),
+	}
 	return pr
 }
 func (p *ReverseProxy) modifyResponseHandle(address *url.URL) func(response *http.Response) error {

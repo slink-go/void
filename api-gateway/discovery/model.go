@@ -2,6 +2,7 @@ package discovery
 
 import (
 	"fmt"
+	"strings"
 )
 
 type Remote struct {
@@ -19,6 +20,9 @@ func (r Remote) String() string {
 		return fmt.Sprintf("%s://%s", r.Scheme, r.Host)
 	}
 	return fmt.Sprintf("%s://%s:%d", r.Scheme, r.Host, r.Port)
+}
+func (r Remote) Compare(other Remote) int {
+	return strings.Compare(r.String(), other.String())
 }
 
 type Remotes struct {

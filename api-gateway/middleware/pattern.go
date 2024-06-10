@@ -6,7 +6,6 @@ import (
 )
 
 func Match(source, pattern string) bool {
-	// TODO: implement URL pattern matching check
 	if strings.Contains(pattern, "*") {
 		pattern = strings.ReplaceAll(pattern, "*", ".*")
 		re := regexp.MustCompile(pattern)

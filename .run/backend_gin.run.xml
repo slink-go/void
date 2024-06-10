@@ -2,6 +2,7 @@
   <configuration default="false" name="backend/gin" type="GoApplicationRunConfiguration" factoryName="Go Application">
     <module name="void" />
     <working_directory value="$PROJECT_DIR$/app/run" />
+    <parameters value="-config .env.dev.backend" />
     <kind value="PACKAGE" />
     <package value="backend/gin" />
     <directory value="$PROJECT_DIR$" />
