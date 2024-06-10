@@ -8,6 +8,10 @@ const (
 	MonitoringEnabled = "MONITORING_ENABLED"
 	MonitoringPort    = "MONITORING_PORT"
 
+	TargetConnTimeout         = "TARGET_CONN_TIMEOUT"
+	TargetConnKeepAlive       = "TARGET_CONN_KEEPALIVE"
+	TargetTLSHandshakeTimeout = "TARGET_TLS_HANDSHAKE_TIMEOUT"
+
 	AuthEnabled                 = "AUTH_ENABLED"
 	AuthEndpoint                = "AUTH_ENDPOINT"
 	AuthMethod                  = "AUTH_METHOD"
@@ -21,10 +25,11 @@ const (
 	EurekaHeartbeatInterval = "EUREKA_HEARTBEAT_INTERVAL" // default 10s
 	EurekaRefreshInterval   = "EUREKA_REFRESH_INTERVAL"   // default 30s
 
-	DiscoClientEnabled = "DISCO_CLIENT_ENABLED"
-	DiscoUrl           = "DISCO_URL"
-	DiscoLogin         = "DISCO_LOGIN"
-	DiscoPassword      = "DISCO_PASSWORD"
+	DiscoClientEnabled       = "DISCO_CLIENT_ENABLED"
+	DiscoUrl                 = "DISCO_URL"
+	DiscoLogin               = "DISCO_LOGIN"
+	DiscoPassword            = "DISCO_PASSWORD"
+	DiscoClientRetryInterval = "DISCO_CLIENT_RETRY_INTERVAL"
 
 	StaticRegistryFile = "STATIC_REGISTRY_FILE"
 

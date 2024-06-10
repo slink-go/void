@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/slink-go/api-gateway/cmd/common/env"
 	"github.com/slink-go/api-gateway/resolver"
 	"github.com/slink-go/logging"
 	"io"
@@ -67,10 +68,10 @@ func (p *ReverseProxy) Proxy(ctx *gin.Context, address *url.URL) *httputil.Rever
 	pr.Transport = &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		DialContext: (&net.Dialer{
-			Timeout:   1 * time.Second, // TODO: configurable variable
-			KeepAlive: 5 * time.Second, // TODO: configurable variable
+			Timeout:   env.DurationOrDefault(env.TargetConnTimeout, 1*time.Second),
+			KeepAlive: env.DurationOrDefault(env.TargetConnKeepAlive, 5*time.Second),
 		}).DialContext,
-		TLSHandshakeTimeout: 1 * time.Second, // TODO: configurable variable
+		TLSHandshakeTimeout: env.DurationOrDefault(env.TargetTLSHandshakeTimeout, 1*time.Second),
 	}
 	return pr
 }

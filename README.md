@@ -40,61 +40,65 @@ Full config see [here](https://github.com/slink-go/void/blob/master/app/run/dock
 ## Configuration
 VOID configuration is performed via following environment variables:
 
-| Variable                                              | Description                                                                     |
-|-------------------------------------------------------|---------------------------------------------------------------------------------|
-| **BASE**                                              |                                                                                 |
-| `GATEWAY_NAME="GW"`                                   | Gateway name to register on Disco service                                       |
-| `SERVICE_PORT=3000`                                   | Service port to listen on                                                       |
-| `MONITORING_ENABLED=true`                             | Monitoring is enabled (if true, monitoring WebUI is started on monitoring port) |
-| `MONITORING_PORT=3001`                                | Monitoring port to listen on                                                    |
-| **REGISTRY**                                          |                                                                                 |
-| `REGISTRY_REFRESH_INITIAL_DELAY=2s`                   | Discovered services registry refresh initial delay                              |
-| `REGISTRY_REFRESH_INTERVAL=10s`                       | Discovered services registry refresh interval                                   |
-| **EUREKA DISCOVERY**                                  |                                                                                 |
-| `EUREKA_CLIENT_ENABLED=true`                          | Enable target service discovery via Eureka                                      |
-| `EUREKA_URL=http://eureka:8761/eureka"`               | Eureka URL                                                                      |
-| `EUREKA_LOGIN=eureka`                                 | Eureka login                                                                    |
-| `EUREKA_PASSWORD=eureka`                              | Eureka password                                                                 |
-| `EUREKA_HEARTBEAT_INTERVAL=5s`                        | Eureka heartbeat interval                                                       |
-| `EUREKA_REFRESH_INTERVAL=10s`                         | Eureka refresh interval                                                         |
-| **DISCO DISCOVERY**                                   |                                                                                 |
-| `DISCO_CLIENT_ENABLED=true`                           | Enable target discovery via Disco                                               |
-| `DISCO_URL=http://disco:8081`                         | Disco URL                                                                       |
-| `DISCO_LOGIN=disco`                                   | Disco login                                                                     |
-| `DISCO_PASSWORD=disco`                                | Disco password                                                                  |
-| **STATIC DISCOVERY**                                  |                                                                                 |
-| `STATIC_REGISTRY_FILE=./routes/registry.yml`          | Static target configuration file (json or yaml)                                 |
-| **AUTHENTICATION**                                    |                                                                                 |
-| `AUTH_ENABLED=true`                                   | Enable incoming requests authentication on external authentication service      |
-| `AUTH_ENDPOINT=http://auth/api/token/exchange"`       | External authentication service URL                                             |
-| `AUTH_METHD=GET`                                      | HTTP Method to access Authentication service (default is GET)                   |
-| `AUTH_RESPONSE_MAPPING_FILE_PATH=/auth_mapping.json"` | Authentication response mapping configuration file                              |
-| `AUTH_CACHE_TTL=10s`                                  | Authentication data cache TTL                                                   |
-| **RATE LIMIT**                                        |                                                                                 |
-| `LIMITER_MODE=DENY`                                   | Rate limiter mode (OFF, DENY, DELAY)                                            |
-| `LIMITER_LIMIT=1`                                     | Rate limiter global limit (requests per time interval)                          |
-| `LIMITER_PERIOD=1s`                                   | Rate limiter global time interval                                               |
-| `LIMITER_CUSTOM="*/service-a/*:1:5s,..."`             | Rate limiter custom config (per path pattern): "{pattern}:{limit}:{period},..." |
-| **LOGGING**                                           |                                                                                 |
-| `GO_ENV=dev`                                          | "dev" - enable "pretty" log, otherwise structured logging is used               |
-| `LOGGING_LEVEL_ROOT=INFO`                             | Root logging level                                                              |
-| `LOGGING_LEVEL_EUREKA_CLIENT=INFO`                    |                                                                                 |
-| `LOGGING_LEVEL_DISCO_CLIENT=INFO`                     |                                                                                 |
-| `LOGGING_LEVEL_STATIC_CLIENT=INFO`                    |                                                                                 |
-| `LOGGING_LEVEL_DISCOVERY_REGISTRY=INFO`               |                                                                                 |
-| `LOGGING_LEVEL_SERVICE_RESOLVER=INFO`                 |                                                                                 |
-| `LOGGING_LEVEL_DISCO_GO=INFO`                         |                                                                                 |
-| `LOGGING_LEVEL_DISCO_GO_REG=INFO`                     |                                                                                 |
-| `LOGGING_LEVEL_RESOLVER_MIDDLEWARE=INFO`              |                                                                                 |
-| `LOGGING_LEVEL_CONTEXT_MIDDLEWARE=INFO`               |                                                                                 |
-| `LOGGING_LEVEL_CR_USER_DETAILS_PROVIDER=INFO`         |                                                                                 |
-| `LOGGING_LEVEL_USER_DETAILS_CACHE=INFO`               |                                                                                 |
-| `LOGGING_LEVEL_HEADER_AUTH_PROVIDER=INFO`             |                                                                                 |
-| `LOGGING_LEVEL_AUTH_CHAIN=INFO`                       |                                                                                 |
-| `LOGGING_LEVEL_GLOBAL_RATE_LIMITER=ERROR`             |                                                                                 |
-| `LOGGING_LEVEL_GIN_GATEWAY=INFO`                      |                                                                                 |
-| `LOGGING_LEVEL_RATE_LIMITER=TRACE`                    |                                                                                 |
-| `LOGGING_LEVEL_GIN=WARN`                              |                                                                                 |
+| Variable                                              | Description                                                                                          |
+|-------------------------------------------------------|------------------------------------------------------------------------------------------------------|
+| **BASE**                                              |                                                                                                      |
+| `GATEWAY_NAME="GW"`                                   | Gateway name to register on Disco service                                                            |
+| `SERVICE_PORT=3000`                                   | Service port to listen on                                                                            |
+| `MONITORING_ENABLED=true`                             | Monitoring is enabled (if true, monitoring WebUI is started on monitoring port)                      |
+| `MONITORING_PORT=3001`                                | Monitoring port to listen on                                                                         |
+| **PROXY**                                             |                                                                                                      |
+| `TARGET_CONN_TIMEOUT=2s`                              | Proxy target connection timeout (should be reasonable low to quickly drop connections to dead peers) |
+| `TARGET_CONN_KEEPALIVE=5s`                            | Proxy target connection keep-alive                                                                   |
+| `TARGET_TLS_HANDSHAKE_TIMEOUT=2s`                     | Proxy target TLS-handshake timeout                                                                   |
+| **REGISTRY**                                          |                                                                                                      |
+| `REGISTRY_REFRESH_INITIAL_DELAY=2s`                   | Discovered services registry refresh initial delay                                                   |
+| `REGISTRY_REFRESH_INTERVAL=10s`                       | Discovered services registry refresh interval                                                        |
+| **EUREKA DISCOVERY**                                  |                                                                                                      |
+| `EUREKA_CLIENT_ENABLED=true`                          | Enable target service discovery via Eureka                                                           |
+| `EUREKA_URL=http://eureka:8761/eureka"`               | Eureka URL                                                                                           |
+| `EUREKA_LOGIN=eureka`                                 | Eureka login                                                                                         |
+| `EUREKA_PASSWORD=eureka`                              | Eureka password                                                                                      |
+| `EUREKA_HEARTBEAT_INTERVAL=5s`                        | Eureka heartbeat interval                                                                            |
+| `EUREKA_REFRESH_INTERVAL=10s`                         | Eureka refresh interval                                                                              |
+| **DISCO DISCOVERY**                                   |                                                                                                      |
+| `DISCO_CLIENT_ENABLED=true`                           | Enable target discovery via Disco                                                                    |
+| `DISCO_URL=http://disco:8081`                         | Disco URL                                                                                            |
+| `DISCO_LOGIN=disco`                                   | Disco login                                                                                          |
+| `DISCO_PASSWORD=disco`                                | Disco password                                                                                       |
+| **STATIC DISCOVERY**                                  |                                                                                                      |
+| `STATIC_REGISTRY_FILE=./routes/registry.yml`          | Static target configuration file (json or yaml)                                                      |
+| **AUTHENTICATION**                                    |                                                                                                      |
+| `AUTH_ENABLED=true`                                   | Enable incoming requests authentication on external authentication service                           |
+| `AUTH_ENDPOINT=http://auth/api/token/exchange"`       | External authentication service URL                                                                  |
+| `AUTH_METHD=GET`                                      | HTTP Method to access Authentication service (default is GET)                                        |
+| `AUTH_RESPONSE_MAPPING_FILE_PATH=/auth_mapping.json"` | Authentication response mapping configuration file                                                   |
+| `AUTH_CACHE_TTL=10s`                                  | Authentication data cache TTL                                                                        |
+| **RATE LIMIT**                                        |                                                                                                      |
+| `LIMITER_MODE=DENY`                                   | Rate limiter mode (OFF, DENY, DELAY)                                                                 |
+| `LIMITER_LIMIT=1`                                     | Rate limiter global limit (requests per time interval)                                               |
+| `LIMITER_PERIOD=1s`                                   | Rate limiter global time interval                                                                    |
+| `LIMITER_CUSTOM="*/service-a/*:1:5s,..."`             | Rate limiter custom config (per path pattern): "{pattern}:{limit}:{period},..."                      |
+| **LOGGING**                                           |                                                                                                      |
+| `GO_ENV=dev`                                          | "dev" - enable "pretty" log, otherwise structured logging is used                                    |
+| `LOGGING_LEVEL_ROOT=INFO`                             | Root logging level                                                                                   |
+| `LOGGING_LEVEL_EUREKA_CLIENT=INFO`                    |                                                                                                      |
+| `LOGGING_LEVEL_DISCO_CLIENT=INFO`                     |                                                                                                      |
+| `LOGGING_LEVEL_STATIC_CLIENT=INFO`                    |                                                                                                      |
+| `LOGGING_LEVEL_DISCOVERY_REGISTRY=INFO`               |                                                                                                      |
+| `LOGGING_LEVEL_SERVICE_RESOLVER=INFO`                 |                                                                                                      |
+| `LOGGING_LEVEL_DISCO_GO=INFO`                         |                                                                                                      |
+| `LOGGING_LEVEL_DISCO_GO_REG=INFO`                     |                                                                                                      |
+| `LOGGING_LEVEL_RESOLVER_MIDDLEWARE=INFO`              |                                                                                                      |
+| `LOGGING_LEVEL_CONTEXT_MIDDLEWARE=INFO`               |                                                                                                      |
+| `LOGGING_LEVEL_CR_USER_DETAILS_PROVIDER=INFO`         |                                                                                                      |
+| `LOGGING_LEVEL_USER_DETAILS_CACHE=INFO`               |                                                                                                      |
+| `LOGGING_LEVEL_HEADER_AUTH_PROVIDER=INFO`             |                                                                                                      |
+| `LOGGING_LEVEL_AUTH_CHAIN=INFO`                       |                                                                                                      |
+| `LOGGING_LEVEL_GLOBAL_RATE_LIMITER=ERROR`             |                                                                                                      |
+| `LOGGING_LEVEL_GIN_GATEWAY=INFO`                      |                                                                                                      |
+| `LOGGING_LEVEL_RATE_LIMITER=TRACE`                    |                                                                                                      |
+| `LOGGING_LEVEL_GIN=WARN`                              |                                                                                                      |
 
 ## Static Discovery
 Static discovery is configured in `STATIC_REGISTRY_FILE`. If this variable is not set, or if configuration file can't be read, static discovery is not used. Configuration can be in either JSON or YAML format.

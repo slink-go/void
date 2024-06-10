@@ -2,6 +2,7 @@ package discovery
 
 import (
 	"fmt"
+	"github.com/slink-go/api-gateway/cmd/common/env"
 	"github.com/slink-go/api-gateway/discovery/util"
 	d "github.com/slink-go/disco-go"
 	da "github.com/slink-go/disco/common/api"
@@ -57,7 +58,7 @@ func (c *discoClient) Connect(options ...interface{}) error {
 			clnt, err := d.NewDiscoHttpClient(cfg)
 			if err != nil {
 				c.logger.Warning("join error: %s", strings.TrimSpace(err.Error()))
-				time.Sleep(5 * time.Second) // TODO: need configurable retry interval
+				time.Sleep(env.DurationOrDefault(env.DiscoClientRetryInterval, 5*time.Second))
 				continue
 			}
 			c.client = clnt

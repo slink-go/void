@@ -2,6 +2,7 @@
   <configuration default="false" name="gateway/gin" type="GoApplicationRunConfiguration" factoryName="Go Application">
     <module name="void" />
     <working_directory value="$PROJECT_DIR$/app/run" />
+    <parameters value="-config .env.dev.void" />
     <kind value="PACKAGE" />
     <package value="github.com/slink-go/api-gateway/cmd/gin" />
     <directory value="$PROJECT_DIR$" />

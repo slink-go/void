@@ -26,7 +26,7 @@ require (
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/rs/zerolog v1.33.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
-	github.com/slink-go/disco-go v0.0.18 // indirect
+	github.com/slink-go/disco-go v0.0.19 // indirect
 	github.com/slink-go/disco/common v0.0.8 // indirect
 	github.com/slink-go/go-eureka-client v1.1.1 // indirect
 	github.com/slink-go/httpclient v0.0.8 // indirect
