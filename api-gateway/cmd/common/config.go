@@ -14,16 +14,17 @@ func LoadEnv() {
 
 	var err error
 	if configFilePathPtr != nil {
-		logging.GetLogger("main").Info("try load environment config from %s", *configFilePathPtr)
+		//logging.GetLogger("main").Info("try load environment config from %s", *configFilePathPtr)
 		err = godotenv.Load(*configFilePathPtr)
 	} else {
-		logging.GetLogger("main").Info("try load environment config from .env")
+		//logging.GetLogger("main").Info("try load environment config from .env")
 		err = godotenv.Load(".env")
 	}
 	if err != nil {
 		os.Setenv(env.GoEnv, "dev")
 		logging.GetLogger("main").Warning("could not read config from %s", *configFilePathPtr)
 	} else {
-		logging.GetLogger("main").Info("environment config loaded")
+		logging.GetLogger("main").Info("environment config loaded from %s", *configFilePathPtr)
 	}
+
 }

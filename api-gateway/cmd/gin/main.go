@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/slink-go/api-gateway/cmd/common"
 	"github.com/slink-go/api-gateway/cmd/common/env"
+	"github.com/slink-go/api-gateway/cmd/common/matcher"
 	"github.com/slink-go/api-gateway/discovery"
 	"github.com/slink-go/api-gateway/middleware/auth"
 	"github.com/slink-go/api-gateway/middleware/rate"
@@ -29,6 +30,8 @@ func main() {
 	}()
 
 	common.LoadEnv()
+
+	authSkipMatcher = matcher.NewPatternMatcher(env.StringArrayOrEmpty(env.AuthSkip)...)
 
 	gin.SetMode(gin.ReleaseMode)
 

@@ -98,6 +98,6 @@ func (c *userDetailsCache) handleSignal() {
 }
 
 func keyLog(token string) string {
-	v := token[:10] + "..."
-	return v + token[len(token)-10:]
+	v := token[:3] + "..."
+	return v + token[len(token)-3:]
 }

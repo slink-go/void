@@ -5,6 +5,7 @@ import (
 	"github.com/gin-contrib/timeout"
 	"github.com/gin-gonic/gin"
 	"github.com/palantir/stacktrace"
+	"github.com/slink-go/api-gateway/cmd/common/matcher"
 	"github.com/slink-go/api-gateway/middleware/auth"
 	"github.com/slink-go/api-gateway/middleware/constants"
 	"github.com/slink-go/api-gateway/middleware/rate"
@@ -19,6 +20,8 @@ import (
 	"strings"
 	"time"
 )
+
+var authSkipMatcher matcher.PatternMatcher
 
 // region - logger
 
@@ -102,10 +105,13 @@ func proxyTargetResolver(reverseProxy *proxy.ReverseProxy) gin.HandlerFunc {
 
 func authResolver(authProvider security.AuthProvider) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+		if authSkipMatcher != nil && authSkipMatcher.Matches(ctx.Request.URL.Path) {
+			return
+		}
 		header := ctx.GetHeader(constants.HdrAuthorization)
 		cookie, _ := ctx.Cookie(constants.HdrAuthToken)
 		authentication, err := authProvider.Get(header, cookie)
-		if err == nil && authentication != nil {
+		if err == nil && authentication != nil && authentication.GetType() != security.TypeNone {
 			switch authentication.GetType() {
 			case security.TypeBearer:
 				fallthrough
@@ -113,6 +119,9 @@ func authResolver(authProvider security.AuthProvider) gin.HandlerFunc {
 				ctx.Set(constants.RequestContextAuth, authentication)
 			default:
 			}
+		} else {
+			ctx.Writer.Write([]byte("Unauthorized"))
+			ctx.AbortWithStatus(http.StatusUnauthorized)
 		}
 	}
 }
@@ -167,6 +176,9 @@ func authProvider(userDetailsProvider security.UserDetailsProvider, cache auth.C
 				if cache != nil {
 					cache.Set(token, userDetails)
 				}
+			} else {
+				ctx.Writer.Write([]byte("Forbidden"))
+				ctx.AbortWithStatus(http.StatusForbidden)
 			}
 		default:
 		}

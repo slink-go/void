@@ -16,6 +16,7 @@ const (
 	AuthEndpoint                = "AUTH_ENDPOINT"
 	AuthMethod                  = "AUTH_METHOD"
 	AuthResponseMappingFilePath = "AUTH_RESPONSE_MAPPING_FILE_PATH"
+	AuthSkip                    = "AUTH_SKIP"
 	AuthCacheTTL                = "AUTH_CACHE_TTL"
 
 	EurekaClientEnabled     = "EUREKA_CLIENT_ENABLED"
