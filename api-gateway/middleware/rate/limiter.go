@@ -2,7 +2,6 @@ package rate
 
 import (
 	"github.com/slink-go/api-gateway/cmd/common/env"
-	"github.com/slink-go/api-gateway/middleware"
 	"github.com/slink-go/api-gateway/middleware/constants"
 	"github.com/slink-go/logging"
 	"github.com/ulule/limiter/v3"
@@ -214,7 +213,7 @@ func (l *limiterImpl) Mode() LimiterMode {
 }
 func (l *limiterImpl) KeyForPath(path string) string {
 	for _, custom := range l.custom {
-		if middleware.Match(path, custom.pattern, custom.re) {
+		if custom.matcher.MatchesExact(path, custom.pattern) {
 			return custom.pattern
 		}
 	}
@@ -233,7 +232,7 @@ func (l *limiterImpl) getRate(path string) limiter.Rate {
 }
 func (l *limiterImpl) getCustomRate(path string) (limiter.Rate, bool) {
 	for _, crl := range l.custom {
-		if middleware.Match(path, crl.pattern, crl.re) {
+		if crl.matcher.MatchesExact(path, crl.pattern) {
 			return limiter.Rate{
 				Period: crl.period,
 				Limit:  crl.limit,
