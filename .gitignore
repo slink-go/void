@@ -10,3 +10,6 @@ app/run/gateway
 /app/test/
 app/run/gateway_gin
 app/run/backend_gin
+app/distr/
+app/run/cr/
+app/run/views/
