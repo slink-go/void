@@ -5,10 +5,8 @@ import (
 	"strings"
 )
 
-func Match(source, pattern string) bool {
+func Match(source, pattern string, re *regexp.Regexp) bool {
 	if strings.Contains(pattern, "*") {
-		pattern = strings.ReplaceAll(pattern, "*", ".*")
-		re := regexp.MustCompile(pattern)
 		return re.Match([]byte(source))
 	} else {
 		return source == pattern

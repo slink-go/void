@@ -214,7 +214,7 @@ func (l *limiterImpl) Mode() LimiterMode {
 }
 func (l *limiterImpl) KeyForPath(path string) string {
 	for _, custom := range l.custom {
-		if middleware.Match(path, custom.pattern) {
+		if middleware.Match(path, custom.pattern, custom.re) {
 			return custom.pattern
 		}
 	}
@@ -233,7 +233,7 @@ func (l *limiterImpl) getRate(path string) limiter.Rate {
 }
 func (l *limiterImpl) getCustomRate(path string) (limiter.Rate, bool) {
 	for _, crl := range l.custom {
-		if middleware.Match(path, crl.pattern) {
+		if middleware.Match(path, crl.pattern, crl.re) {
 			return limiter.Rate{
 				Period: crl.period,
 				Limit:  crl.limit,

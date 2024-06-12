@@ -16,12 +16,12 @@
 13. [o] ~~Fallback (to default backend service) (?)~~
 14. [-] Profiling
 15. [+] Configuration & feature flags
-16. [-] Handle dead peers (connection refused)
+16. [-] Handle dead peers (connection refused, host unreachable, etc)
 17. [-] Remote peers filter (?) (by meta, by status, ...)
 18. [+] Static resolver config from file
 19. [-] Client: advertise custom address / port (for specific deployment cases) - using META
 20. [-] advertise app info url (?)
-21. [-] gRPC gateway 
+21. [-] gRPC reverse proxy 
 22. [+] Pattern matcher
 23. [-] CSRF (?)
 24. [-] Correct errors handling
