@@ -7,6 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/pprof"
 	"github.com/gofiber/template/html/v2"
 	"github.com/slink-go/api-gateway/cmd/common/env"
+	"github.com/slink-go/api-gateway/cmd/common/variables"
 	"github.com/slink-go/api-gateway/discovery"
 	h "github.com/slink-go/api-gateway/middleware/constants"
 	"github.com/slink-go/logging"
@@ -93,9 +94,9 @@ func initDiscoveryClient(applicationId, instanceId, boundAddress, discoveryServi
 	}
 }
 func initDiscoClient(applicationId, boundAddress string) discovery.Client {
-	url := env.StringOrDefault(env.DiscoUrl, "")
-	lg := env.StringOrDefault(env.DiscoLogin, "")
-	pw := env.StringOrDefault(env.DiscoPassword, "")
+	url := env.StringOrDefault(variables.DiscoUrl, "")
+	lg := env.StringOrDefault(variables.DiscoLogin, "")
+	pw := env.StringOrDefault(variables.DiscoPassword, "")
 	if url == "" {
 		return nil
 	}
@@ -115,9 +116,9 @@ func initDiscoClient(applicationId, boundAddress string) discovery.Client {
 	)
 }
 func initEurekaClient(applicationId, instanceId, boundAddress string) discovery.Client {
-	url := env.StringOrDefault(env.EurekaUrl, "")
-	lg := env.StringOrDefault(env.EurekaLogin, "")
-	pw := env.StringOrDefault(env.EurekaPassword, "")
+	url := env.StringOrDefault(variables.EurekaUrl, "")
+	lg := env.StringOrDefault(variables.EurekaLogin, "")
+	pw := env.StringOrDefault(variables.EurekaPassword, "")
 	if url == "" {
 		return nil
 	}
@@ -132,8 +133,8 @@ func initEurekaClient(applicationId, instanceId, boundAddress string) discovery.
 		discovery.NewEurekaClientConfig().
 			WithUrl(url).
 			WithAuth(lg, pw).
-			WithHeartBeat(env.DurationOrDefault(env.EurekaHeartbeatInterval, time.Second*10)).
-			WithRefresh(env.DurationOrDefault(env.EurekaRefreshInterval, time.Second*30)).
+			WithHeartBeat(env.DurationOrDefault(variables.EurekaHeartbeatInterval, time.Second*10)).
+			WithRefresh(env.DurationOrDefault(variables.EurekaRefreshInterval, time.Second*30)).
 			WithApplication(applicationId).
 			//WithInstanceId(fmt.Sprintf("%s-%s", applicationId, instanceId)).
 			WithPort(port),

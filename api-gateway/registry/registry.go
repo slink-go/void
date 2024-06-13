@@ -1,9 +1,10 @@
 package registry
 
 import (
-	"github.com/slink-go/api-gateway/cmd/common/env"
+	"github.com/slink-go/api-gateway/cmd/common/variables"
 	"github.com/slink-go/api-gateway/discovery"
 	"github.com/slink-go/logging"
+	"github.com/slink-go/util/env"
 	"os"
 	"os/signal"
 	"slices"
@@ -48,8 +49,8 @@ func NewServiceRegistry(clients ...discovery.Client) ServiceRegistry {
 }
 
 func (sr *serviceRegistry) refresh() {
-	timer := time.NewTimer(env.DurationOrDefault(env.RegistryRefreshInitialDelay, time.Second*5))
-	interval := env.DurationOrDefault(env.RegistryRefreshInterval, time.Second*60)
+	timer := time.NewTimer(env.DurationOrDefault(variables.RegistryRefreshInitialDelay, time.Second*5))
+	interval := env.DurationOrDefault(variables.RegistryRefreshInterval, time.Second*60)
 	for {
 		select {
 		case <-sr.sigChn:

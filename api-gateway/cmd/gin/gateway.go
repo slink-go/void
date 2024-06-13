@@ -4,8 +4,8 @@ import (
 	"fmt"
 	helmet "github.com/danielkov/gin-helmet"
 	"github.com/gin-gonic/gin"
-	"github.com/slink-go/api-gateway/cmd/common/env"
 	"github.com/slink-go/api-gateway/cmd/common/templates"
+	"github.com/slink-go/api-gateway/cmd/common/variables"
 	"github.com/slink-go/api-gateway/gateway"
 	"github.com/slink-go/api-gateway/middleware/auth"
 	"github.com/slink-go/api-gateway/middleware/constants"
@@ -14,8 +14,10 @@ import (
 	"github.com/slink-go/api-gateway/proxy"
 	"github.com/slink-go/api-gateway/registry"
 	"github.com/slink-go/logging"
+	"github.com/slink-go/util/env"
 	"net/http"
 	"net/url"
+	"time"
 )
 
 type GinBasedGateway struct {
@@ -169,7 +171,7 @@ func (g *GinBasedGateway) Serve(addresses ...string) {
 		panic("service address(es) not set")
 	}
 
-	if env.BoolOrDefault(env.MonitoringEnabled, false) {
+	if env.BoolOrDefault(variables.MonitoringEnabled, false) {
 		if len(addresses) > 1 && addresses[1] != "" {
 			go NewService("monitor").
 				//WithHandler("/monitor", monitor.New(monitor.Config{Title: "VOID API Gateway (monitoring)"})) // TODO: fiber-like monitoring
@@ -182,16 +184,16 @@ func (g *GinBasedGateway) Serve(addresses ...string) {
 		}
 	}
 	if addresses[0] != "" {
-		authEnabled := env.BoolOrDefault(env.AuthEnabled, false)
+		authEnabled := env.BoolOrDefault(variables.AuthEnabled, false)
 		NewService("proxy").
 			WithPrometheus().
 			WithMiddleware(gin.Recovery()).
+			WithMiddleware(timeouter(env.DurationOrDefault(variables.RequestTimeout, 5*time.Minute), timeoutSkipMatcher)).
 			WithMiddleware(customLogger()).
 			WithMiddleware(headersCleaner()).
 			WithMiddleware(rateLimiter(g.limiter)).
 			WithMiddleware(helmet.Default()). // TODO: custom helmet config
 			//WithMiddleware(csrf.New()). // TODO: implement it for Gin (?)
-			//WithMiddleware(timeouter(100 * time.Millisecond)). // TODO: skip paths
 			WithMiddleware(proxyTargetResolver(g.reverseProxy)).
 			//WithMiddleware(circuitBreaker()).
 			WithOptionalMiddleware(authEnabled, authResolver(g.authProvider)).

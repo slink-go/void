@@ -6,7 +6,6 @@ require (
 	github.com/a-h/templ v0.2.707
 	github.com/danielkov/gin-helmet v0.0.0-20171108135313-1387e224435e
 	github.com/gin-contrib/pprof v1.5.0
-	github.com/gin-contrib/timeout v1.0.1
 	github.com/gin-gonic/gin v1.10.0
 	github.com/google/uuid v1.6.0
 	github.com/jellydator/ttlcache/v3 v3.2.0
@@ -15,8 +14,10 @@ require (
 	github.com/prometheus/client_golang v1.19.1
 	github.com/slink-go/disco-go v0.0.19
 	github.com/slink-go/disco/common v0.0.8
+	github.com/slink-go/gin-timeout v1.0.3
 	github.com/slink-go/go-eureka-client v1.1.1
 	github.com/slink-go/logging v0.0.2
+	github.com/slink-go/util v0.0.2
 	github.com/stretchr/testify v1.9.0
 	github.com/ulule/limiter/v3 v3.11.2
 	github.com/xhit/go-str2duration/v2 v2.1.0

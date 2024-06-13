@@ -1,9 +1,10 @@
 package rate
 
 import (
-	"github.com/slink-go/api-gateway/cmd/common/env"
+	"github.com/slink-go/api-gateway/cmd/common/variables"
 	"github.com/slink-go/api-gateway/middleware/constants"
 	"github.com/slink-go/logging"
+	"github.com/slink-go/util/env"
 	"github.com/ulule/limiter/v3"
 	"github.com/ulule/limiter/v3/drivers/store/memory"
 	"strings"
@@ -105,7 +106,7 @@ func WithInMemStore() Option {
 	store := memory.NewStoreWithOptions(
 		limiter.StoreOptions{
 			Prefix:          "default:",
-			CleanUpInterval: env.DurationOrDefault(env.RateLimitCacheCleanupInterval, time.Second*30),
+			CleanUpInterval: env.DurationOrDefault(variables.RateLimitCacheCleanupInterval, time.Second*30),
 		},
 	)
 	return &storeOption{

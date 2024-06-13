@@ -2,7 +2,7 @@ package resolver
 
 import (
 	"errors"
-	"github.com/slink-go/api-gateway/cmd/common/env"
+	"github.com/slink-go/api-gateway/cmd/common/variables"
 	"github.com/slink-go/api-gateway/discovery"
 	"github.com/slink-go/api-gateway/registry"
 	"os"
@@ -276,7 +276,7 @@ func TestPathResolve(t *testing.T) {
 	pp := &pathProcessor{}
 	reg := registry.NewServiceRegistry(discovery.NewStaticClient(mappings))
 	// --- чтобы refresh успел случиться -------------------
-	os.Setenv(env.RegistryRefreshInitialDelay, "0ms")
+	os.Setenv(variables.RegistryRefreshInitialDelay, "0ms")
 	time.Sleep(time.Millisecond * 10)
 	// -----------------------------------------------------
 	for _, tt := range tests {

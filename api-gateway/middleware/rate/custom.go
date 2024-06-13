@@ -1,8 +1,8 @@
 package rate
 
 import (
-	"github.com/slink-go/api-gateway/cmd/common/matcher"
 	"github.com/slink-go/api-gateway/middleware/constants"
+	"github.com/slink-go/util/matcher"
 	"time"
 )
 
@@ -26,7 +26,7 @@ type customOptionPattern struct {
 
 func (c *customOptionPattern) applyCustom(r *customRateLimit) {
 	r.pattern = c.value
-	r.matcher = matcher.NewPatternMatcher(c.value)
+	r.matcher = matcher.NewRegexPatternMatcher(c.value)
 }
 
 // endregion
@@ -71,7 +71,7 @@ func (c *customOptionLimit) applyCustom(r *customRateLimit) {
 func NewCustomRateLimit() *customRateLimit {
 	return &customRateLimit{
 		pattern: "*",
-		matcher: matcher.NewPatternMatcher(),
+		matcher: matcher.NewRegexPatternMatcher(),
 		period:  time.Second,
 		limit:   constants.MaxInt64,
 	}

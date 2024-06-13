@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/slink-go/api-gateway/cmd/common"
-	"github.com/slink-go/api-gateway/cmd/common/env"
-	"github.com/slink-go/api-gateway/cmd/common/matcher"
+	"github.com/slink-go/api-gateway/cmd/common/variables"
 	"github.com/slink-go/api-gateway/discovery"
 	"github.com/slink-go/api-gateway/middleware/auth"
 	"github.com/slink-go/api-gateway/middleware/rate"
@@ -14,6 +13,8 @@ import (
 	"github.com/slink-go/api-gateway/registry"
 	"github.com/slink-go/api-gateway/resolver"
 	"github.com/slink-go/logging"
+	"github.com/slink-go/util/env"
+	"github.com/slink-go/util/matcher"
 	"github.com/xhit/go-str2duration/v2"
 	"os"
 	"strconv"
@@ -31,17 +32,18 @@ func main() {
 
 	common.LoadEnv()
 
-	authSkipMatcher = matcher.NewPatternMatcher(env.StringArrayOrEmpty(env.AuthSkip)...)
+	authSkipMatcher = matcher.NewRegexPatternMatcher(env.StringArrayOrEmpty(variables.AuthSkip)...)
+	timeoutSkipMatcher = matcher.NewRegexPatternMatcher(env.StringArrayOrEmpty(variables.TimeoutSkip)...)
 
 	gin.SetMode(gin.ReleaseMode)
 
 	var sPort string
-	if svcPort := int(env.Int64OrDefault(env.ServicePort, 0)); svcPort > 0 {
+	if svcPort := int(env.Int64OrDefault(variables.ServicePort, 0)); svcPort > 0 {
 		sPort = fmt.Sprintf(":%d", svcPort)
 	}
 
 	var mPort string
-	if monPort := int(env.Int64OrDefault(env.MonitoringPort, 0)); monPort > 0 {
+	if monPort := int(env.Int64OrDefault(variables.MonitoringPort, 0)); monPort > 0 {
 		mPort = fmt.Sprintf(":%d", monPort)
 	}
 
@@ -64,7 +66,7 @@ func startGateway(proxyAddr, monitoringAddr string, dc ...discovery.Client) chan
 	quitChn := make(chan struct{})
 	go NewGinBasedGateway(
 		WithAuthProvider(ap),
-		WithUserDetailsCache(auth.NewUserDetailsCache(env.DurationOrDefault(env.AuthCacheTTL, time.Second*30))),
+		WithUserDetailsCache(auth.NewUserDetailsCache(env.DurationOrDefault(variables.AuthCacheTTL, time.Second*30))),
 		WithUserDetailsProvider(udp),
 		WithRateLimiter(limiter),
 		WithReverseProxy(pr),
@@ -75,21 +77,21 @@ func startGateway(proxyAddr, monitoringAddr string, dc ...discovery.Client) chan
 }
 
 func createEurekaClient() discovery.Client {
-	if !env.BoolOrDefault(env.EurekaClientEnabled, false) {
+	if !env.BoolOrDefault(variables.EurekaClientEnabled, false) {
 		return nil
 	}
-	if env.StringOrDefault(env.EurekaUrl, "") == "" {
+	if env.StringOrDefault(variables.EurekaUrl, "") == "" {
 		panic("eureka service URL not set")
 	}
 	dc := discovery.NewEurekaClient(
 		discovery.NewEurekaClientConfig().
-			WithUrl(env.StringOrDefault(env.EurekaUrl, "")).
+			WithUrl(env.StringOrDefault(variables.EurekaUrl, "")).
 			WithAuth(
-				env.StringOrDefault(env.EurekaLogin, ""),
-				env.StringOrDefault(env.EurekaPassword, ""),
+				env.StringOrDefault(variables.EurekaLogin, ""),
+				env.StringOrDefault(variables.EurekaPassword, ""),
 			).
-			WithRefresh(env.DurationOrDefault(env.EurekaRefreshInterval, time.Second*30)).
-			WithApplication(env.StringOrDefault(env.GatewayName, "fiber-gateway")),
+			WithRefresh(env.DurationOrDefault(variables.EurekaRefreshInterval, time.Second*30)).
+			WithApplication(env.StringOrDefault(variables.GatewayName, "fiber-gateway")),
 	)
 	if err := dc.Connect(); err != nil {
 		logging.GetLogger("main").Warning("eureka client initialization error: %s", err)
@@ -99,20 +101,20 @@ func createEurekaClient() discovery.Client {
 	return dc
 }
 func createDiscoClient() discovery.Client {
-	if !env.BoolOrDefault(env.DiscoClientEnabled, false) {
+	if !env.BoolOrDefault(variables.DiscoClientEnabled, false) {
 		return nil
 	}
-	if env.StringOrDefault(env.DiscoUrl, "") == "" {
+	if env.StringOrDefault(variables.DiscoUrl, "") == "" {
 		panic("disco service URL not set")
 	}
 	dc := discovery.NewDiscoClient(
 		discovery.NewDiscoClientConfig().
-			WithUrl(env.StringOrDefault(env.DiscoUrl, "")).
+			WithUrl(env.StringOrDefault(variables.DiscoUrl, "")).
 			WithBasicAuth(
-				env.StringOrDefault(env.DiscoLogin, ""),
-				env.StringOrDefault(env.DiscoPassword, ""),
+				env.StringOrDefault(variables.DiscoLogin, ""),
+				env.StringOrDefault(variables.DiscoPassword, ""),
 			).
-			WithApplication(env.StringOrDefault(env.GatewayName, "fiber-gateway")),
+			WithApplication(env.StringOrDefault(variables.GatewayName, "fiber-gateway")),
 	)
 
 	if err := dc.Connect(make(chan struct{})); err != nil {
@@ -123,7 +125,7 @@ func createDiscoClient() discovery.Client {
 	return dc
 }
 func createStaticClient() discovery.Client {
-	filePath := env.StringOrDefault(env.StaticRegistryFile, "")
+	filePath := env.StringOrDefault(variables.StaticRegistryFile, "")
 	if filePath == "" {
 		return nil
 	}
@@ -147,9 +149,9 @@ func createUserDetailsProvider(ap security.AuthProvider, res resolver.ServiceRes
 		security.UdpWithAuthProvider(ap),
 		security.UdpWithServiceResolver(res),
 		security.UdpWithPathProcessor(proc),
-		security.UdpWithMethod(env.StringOrDefault(env.AuthMethod, "GET")),
-		security.UdpWithAuthEndpoint(env.StringOrDefault(env.AuthEndpoint, "")),
-		security.UdpWithResponseParser(security.NewResponseParser(security.WithMappingFile(os.Getenv(env.AuthResponseMappingFilePath)))),
+		security.UdpWithMethod(env.StringOrDefault(variables.AuthMethod, "GET")),
+		security.UdpWithAuthEndpoint(env.StringOrDefault(variables.AuthEndpoint, "")),
+		security.UdpWithResponseParser(security.NewResponseParser(security.WithMappingFile(os.Getenv(variables.AuthResponseMappingFilePath)))),
 	)
 }
 func createReverseProxy(res resolver.ServiceResolver, proc resolver.PathProcessor) *proxy.ReverseProxy {
@@ -157,9 +159,9 @@ func createReverseProxy(res resolver.ServiceResolver, proc resolver.PathProcesso
 }
 func createRateLimiter() rate.Limiter {
 	var options []rate.Option
-	options = append(options, rate.WithLimit(env.Int64OrDefault(env.LimiterLimit, 10)))
-	options = append(options, rate.WithPeriod(env.DurationOrDefault(env.LimiterPeriod, time.Minute)))
-	options = append(options, rate.WithMode(env.StringOrDefault(env.LimiterMode, "")))
+	options = append(options, rate.WithLimit(env.Int64OrDefault(variables.LimiterLimit, 10)))
+	options = append(options, rate.WithPeriod(env.DurationOrDefault(variables.LimiterPeriod, time.Minute)))
+	options = append(options, rate.WithMode(env.StringOrDefault(variables.LimiterMode, "")))
 	options = append(options, rate.WithInMemStore())
 	options = append(options, parseCustomRateLimits()...)
 	limiter := rate.NewLimiter(options...)
@@ -167,7 +169,7 @@ func createRateLimiter() rate.Limiter {
 }
 func parseCustomRateLimits() []rate.Option {
 	logger := logging.GetLogger("custom-rate-parser")
-	v, err := env.String(env.LimiterCustomConfig)
+	v, err := env.String(variables.LimiterCustomConfig)
 	if err != nil {
 		return nil
 	}

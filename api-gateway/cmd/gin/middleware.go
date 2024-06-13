@@ -2,10 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/gin-contrib/timeout"
 	"github.com/gin-gonic/gin"
 	"github.com/palantir/stacktrace"
-	"github.com/slink-go/api-gateway/cmd/common/matcher"
 	"github.com/slink-go/api-gateway/middleware/auth"
 	"github.com/slink-go/api-gateway/middleware/constants"
 	"github.com/slink-go/api-gateway/middleware/rate"
@@ -13,7 +11,9 @@ import (
 	"github.com/slink-go/api-gateway/proxy"
 	"github.com/slink-go/api-gateway/registry"
 	"github.com/slink-go/api-gateway/resolver"
+	"github.com/slink-go/gin-timeout"
 	"github.com/slink-go/logging"
+	"github.com/slink-go/util/matcher"
 	"github.com/ulule/limiter/v3"
 	ginlimiter "github.com/ulule/limiter/v3/drivers/middleware/gin"
 	"net/http"
@@ -22,6 +22,7 @@ import (
 )
 
 var authSkipMatcher matcher.PatternMatcher
+var timeoutSkipMatcher matcher.PatternMatcher
 
 // region - logger
 
@@ -120,7 +121,7 @@ func authResolver(authProvider security.AuthProvider) gin.HandlerFunc {
 			default:
 			}
 		} else {
-			ctx.Writer.Write([]byte("Unauthorized"))
+			ctx.Writer.Write([]byte(http.StatusText(http.StatusUnauthorized)))
 			ctx.AbortWithStatus(http.StatusUnauthorized)
 		}
 	}
@@ -177,7 +178,7 @@ func authProvider(userDetailsProvider security.UserDetailsProvider, cache auth.C
 					cache.Set(token, userDetails)
 				}
 			} else {
-				ctx.Writer.Write([]byte("Forbidden"))
+				ctx.Writer.Write([]byte(http.StatusText(http.StatusForbidden)))
 				ctx.AbortWithStatus(http.StatusForbidden)
 			}
 		default:
@@ -233,13 +234,16 @@ func contextConfigurator() gin.HandlerFunc {
 // endregion
 // region - timeouter - ...
 
-func timeouter(tm time.Duration) gin.HandlerFunc {
-	logger := logging.GetLogger("timeout-middleware")
+func timeouter(tm time.Duration, skipPatterns matcher.PatternMatcher) gin.HandlerFunc {
+	//logger := logging.GetLogger("timeout-middleware")
 	return timeout.New(
 		timeout.WithTimeout(tm),
-		timeout.WithHandler(func(c *gin.Context) {
-			logger.Trace("[timeout] handle")
-			c.Next()
+		timeout.WithSkip(skipPatterns),
+		timeout.WithHandler(func(context *gin.Context) {
+			context.Next()
+		}),
+		timeout.WithResponse(func(context *gin.Context) {
+			context.String(http.StatusRequestTimeout, http.StatusText(http.StatusRequestTimeout))
 		}),
 	)
 }

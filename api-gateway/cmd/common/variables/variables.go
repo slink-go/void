@@ -1,4 +1,4 @@
-package env
+package variables
 
 const (
 	GoEnv = "GO_ENV"
@@ -18,6 +18,9 @@ const (
 	AuthResponseMappingFilePath = "AUTH_RESPONSE_MAPPING_FILE_PATH"
 	AuthSkip                    = "AUTH_SKIP"
 	AuthCacheTTL                = "AUTH_CACHE_TTL"
+
+	RequestTimeout = "REQUEST_TIMEOUT"
+	TimeoutSkip    = "TIMEOUT_SKIP"
 
 	EurekaClientEnabled     = "EUREKA_CLIENT_ENABLED"
 	EurekaUrl               = "EUREKA_URL"                //

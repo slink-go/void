@@ -1,9 +1,10 @@
 package discovery
 
 import (
-	"github.com/slink-go/api-gateway/cmd/common/env"
+	"github.com/slink-go/api-gateway/cmd/common/variables"
 	"github.com/slink-go/api-gateway/discovery/util"
 	"github.com/slink-go/logging"
+	"github.com/slink-go/util/env"
 	"os"
 	"time"
 )
@@ -25,7 +26,7 @@ func NewDiscoClientConfig() *discoConfig {
 	return &discoConfig{
 		application: "UNKNOWN",
 		hostname:    "",
-		port:        int(env.Int64OrDefault(env.ServicePort, 0)),
+		port:        int(env.Int64OrDefault(variables.ServicePort, 0)),
 	}
 }
 

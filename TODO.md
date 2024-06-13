@@ -31,7 +31,7 @@
 ### Middleware
 1. [+] Auth check
 2. [+] rest-auth-provider
-3. [-] Timeout support (except sse/ws)
+3. [+] Timeout support (except sse/ws). Limitation: with timeout enabled streaming services does not work (all streaming endpoints should be skipped for timeout processing) 
 4. [-] Metrics / latency measurement
 5. [-] Bulkhead / circuit breaker / etc
 6. [+] Limiter config
@@ -43,8 +43,8 @@
 10. [-] Use disco-client resolving capabilities (falling back to HostResolve)
 
 ### URL Pattern Matching
-1. [-] auth skip urls
-2. [-] timeout skip urls
+1. [+] auth skip urls
+2. [+] timeout skip urls
 3. [+] rate limit: custom config
 
 ### Procedure
