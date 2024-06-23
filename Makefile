@@ -50,6 +50,7 @@ define create-bin
   	@echo building $@ $(OSN)-$(ARCH) at $(SRCDIR) && \
 	mkdir -p $(ROOT_DIR)/app/distr/$@/$(OSN)/$(ARCH) && \
 	cd $(SRCDIR) && \
+	GO111MODULE=on go get -d -v ./... && \
 	CGO_ENABLED=0 GOOS=$(OS) GOARCH=$(ARCH) go build -ldflags="-s -w" -o $(ROOT_DIR)/app/distr/$@/$(OSN)/$(ARCH)/$@$(EXT) .
 endef
 # ----------------------------------------------------
@@ -62,12 +63,10 @@ endef
 	flush
 
 all: clean binaries images
-
 clean:
 	@make binaries-clean
 	@make docker-clean
 	echo "> cleaned"
-
 binaries:
 	@make bin OS=darwin ARCH=amd64
 	@make bin OS=darwin ARCH=arm64
@@ -75,7 +74,6 @@ binaries:
 	@make bin OS=linux ARCH=arm64
 	@make bin OS=windows ARCH=amd64
 	echo "> built programs"
-
 images: docker-login
 	@make docker-setup
 	@make docker-void DOCKER_FILE="gin" IMAGE="void" TYPE="" VERSIONS="$(VERSION_SHORT) latest"
@@ -83,7 +81,6 @@ images: docker-login
 	@make docker-teardown
 	@make flush
 	echo "> built docker images"
-
 flush:
 	docker container ls -aq | xargs docker stop
 	docker container ls -aq | xargs docker container rm
