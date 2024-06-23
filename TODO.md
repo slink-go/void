@@ -21,12 +21,13 @@
 18. [+] Static resolver config from file
 19. [-] Client: advertise custom address / port (for specific deployment cases) - using META
 20. [-] advertise app info url (?)
-21. [-] gRPC reverse proxy 
+21. [-] gRPC reverse proxy  (see: https://habr.com/ru/articles/645433/)
 22. [+] Pattern matcher
 23. [-] CSRF (?)
 24. [-] Correct errors handling
 25. [-] ENHANCED Pattern matcher 
-
+26. [-] Conditional Timeout Middleware
+27. [-] CORS config
 
 ### Middleware
 1. [+] Auth check
