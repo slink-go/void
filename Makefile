@@ -51,7 +51,9 @@ define create-bin
 	mkdir -p $(ROOT_DIR)/app/distr/$@/$(OSN)/$(ARCH) && \
 	cd $(SRCDIR) && \
 	GO111MODULE=on go get -d -v ./... && \
-	CGO_ENABLED=0 GOOS=$(OS) GOARCH=$(ARCH) go build -ldflags="-s -w" -o $(ROOT_DIR)/app/distr/$@/$(OSN)/$(ARCH)/$@$(EXT) .
+	CGO_ENABLED=0 GOOS=$(OS) GOARCH=$(ARCH) go build -ldflags="-s -w" -o $(ROOT_DIR)/app/distr/$@/$(OSN)/$(ARCH)/$@$(EXT) . && \
+	cd $(ROOT_DIR)/app/distr/$@/$(OSN)/$(ARCH) && \
+	tar cfz $@_$(VERSION_SHORT)_$(OSN)_$(ARCH).tgz $@$(EXT) > /dev/null
 endef
 # ----------------------------------------------------
 
